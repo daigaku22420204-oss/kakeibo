@@ -1,0 +1,1444 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="kakeibo-standalone" content="1">
+<meta name="theme-color" content="#F1F4F3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111715" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="家計簿">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>まいつき家計簿</title>
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px)}body{margin:0;font-size:14px;-webkit-text-size-adjust:100%}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one narrow column like a bankbook page; tabs at top on wide screens, fixed bottom bar on phones; settings behind the header gear */
+:root{
+  --bg:#F1F4F3; --surface:#FFFFFF; --sunk:#E7ECEA; --ink:#17201D; --muted:#5B6964; --line:#D6DEDA;
+  --accent:#1E6B57; --accent-ink:#FFFFFF; --pool:#3A57A8; --pool-soft:#DCE3F5; --fund:#8A5A9E; --fund-soft:#EEE2F3;
+  --good:#2C7A4B; --warn:#B26B0B; --bad:#BF3B28; --good-soft:#DDEFE3; --warn-soft:#F6E7CF; --bad-soft:#F6DDD8;
+  --k1:#2F7F68; --k2:#C0812A; --k3:#3E68B5; --k4:#B4506A; --k5:#7A5BB0; --k6:#4D8FA3; --k7:#8B8A3A; --k8:#7A6E66;
+  --f-display:"Dela Gothic One","Zen Kaku Gothic New",system-ui,sans-serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111715; --surface:#19211E; --sunk:#222C28; --ink:#E6EEEA; --muted:#97A6A0; --line:#2E3A36;
+  --accent:#4FB394; --accent-ink:#0C1512; --pool:#8DA6EC; --pool-soft:#25304D; --fund:#C79BDB; --fund-soft:#33263A;
+  --good:#5CC48A; --warn:#E3A24A; --bad:#EE7A66; --good-soft:#1C3527; --warn-soft:#3A2C17; --bad-soft:#3E211C;
+  --k1:#5CB89B; --k2:#E0A456; --k3:#7E9FE0; --k4:#E0849C; --k5:#AE92E0; --k6:#79BCD0; --k7:#BDBC63; --k8:#ADA197;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111715; --surface:#19211E; --sunk:#222C28; --ink:#E6EEEA; --muted:#97A6A0; --line:#2E3A36;
+  --accent:#4FB394; --accent-ink:#0C1512; --pool:#8DA6EC; --pool-soft:#25304D; --fund:#C79BDB; --fund-soft:#33263A;
+  --good:#5CC48A; --warn:#E3A24A; --bad:#EE7A66; --good-soft:#1C3527; --warn-soft:#3A2C17; --bad-soft:#3E211C;
+  --k1:#5CB89B; --k2:#E0A456; --k3:#7E9FE0; --k4:#E0849C; --k5:#AE92E0; --k6:#79BCD0; --k7:#BDBC63; --k8:#ADA197;
+  color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 40px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{text-wrap:balance;margin:0}
+h2{font-size:16px;font-weight:700}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.label{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:500}
+
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:6px 10px}
+.brand{font-family:var(--f-display);font-size:20px;letter-spacing:.02em}
+.top-right{display:flex;align-items:center;gap:10px}
+.sync{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.sync.ok i{background:var(--good)} .sync.warn i{background:var(--warn)}
+.gear{border:1px solid var(--line);background:var(--surface);border-radius:10px;height:36px;padding:0 10px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500}
+.gear[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.gear svg{width:18px;height:18px}
+
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:4px;border-radius:12px;background:var(--sunk);margin-bottom:16px}
+nav.tabs button{border:0;background:transparent;border-radius:9px;padding:8px 2px;font-weight:500;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12.5px;white-space:nowrap}
+nav.tabs button svg{width:20px;height:20px}
+nav.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+@media (max-width:719px){
+  nav.tabs{position:fixed;top:auto;bottom:0;left:0;right:0;margin:0;border-radius:0;background:var(--surface);border-top:1px solid var(--line);
+    padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+  nav.tabs button[aria-selected="true"]{background:var(--sunk);box-shadow:none}
+  .wrap{padding-block:8px 110px}
+}
+
+.panel{display:grid;gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.stack{display:grid;gap:12px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.between{justify-content:space-between}
+.intro{font-size:13px;color:var(--muted);padding-inline:2px}
+
+.big{font-family:var(--f-display);font-size:clamp(32px,9vw,44px);line-height:1.1;font-variant-numeric:tabular-nums}
+.big.neg{color:var(--bad)}
+.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kv div{background:var(--sunk);border-radius:10px;padding:8px 10px;min-width:0}
+.kv b{display:block;font-family:var(--f-num);font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meter{position:relative;height:12px;background:var(--sunk);border-radius:6px}
+.meter > span{position:absolute;inset:0 auto 0 0;border-radius:6px;background:var(--accent)}
+.meter > span.over{background:var(--bad)}
+.meter .pace{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);opacity:.55;border-radius:1px}
+.meter.thin{height:8px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block}
+
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (max-width:420px){.chips{grid-template-columns:repeat(3,1fr)}}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.chip .nm{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.chip .lf{font-size:11px;color:var(--muted);font-family:var(--f-num);white-space:nowrap}
+.chip.fund .lf{color:var(--fund)}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
+.amount{display:flex;align-items:center;gap:8px;background:var(--sunk);border-radius:12px;padding:6px 14px;border:1.5px solid transparent}
+.amount:focus-within{border-color:var(--accent)}
+.amount span{font-family:var(--f-display);font-size:26px;color:var(--muted)}
+.amount input{border:0;background:transparent;font-family:var(--f-num);font-size:30px;font-weight:600;width:100%;min-width:0;padding:6px 0;outline:none}
+.text-in{width:100%;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px}
+select.text-in{padding-right:6px}
+.btn{border:0;border-radius:12px;padding:12px 18px;font-weight:700;background:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--accent);border:1.5px solid var(--line)}
+.btn.pool{background:var(--pool);color:var(--accent-ink)}
+.btn.sm{padding:7px 12px;font-size:13px;border-radius:9px}
+.btn.wide{width:100%;font-size:16px;padding:14px}
+.stamp{display:inline-flex;align-items:center;gap:6px;border:1.5px dashed var(--line);border-radius:8px;padding:2px 10px;font-size:13px;color:var(--muted)}
+
+.list{display:grid}
+.item{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item .main{min-width:0}
+.item .main > div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .amt{font-family:var(--f-num);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.del{border:0;background:transparent;color:var(--muted);font-size:12px;padding:6px 8px;border-radius:8px;white-space:nowrap}
+.del.arm{background:var(--bad-soft);color:var(--bad);font-weight:700}
+.dayhead{font-size:12px;color:var(--muted);padding:12px 0 2px;letter-spacing:.06em;border-top:1px solid var(--line)}
+.dayhead:first-child{border-top:0;padding-top:0}
+.empty{padding:18px;text-align:center;color:var(--muted);background:var(--sunk);border-radius:10px;font-size:14px}
+
+.cat{display:grid;gap:6px;padding:12px 0;border-top:1px solid var(--line)}
+.cat:first-child{border-top:0;padding-top:0}
+.cat .head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cat .head .nm{font-weight:700}
+.cat .head .fig{margin-left:auto;font-family:var(--f-num);font-size:14px;font-variant-numeric:tabular-nums}
+.pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:.04em;white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.pl{background:var(--pool-soft);color:var(--pool)}
+.pill.fd{background:var(--fund-soft);color:var(--fund)}
+.pill.mute{background:var(--sunk);color:var(--muted)}
+.monthnav{display:flex;align-items:center;gap:8px}
+.monthnav button{border:1px solid var(--line);background:var(--surface);border-radius:9px;width:34px;height:34px}
+.monthnav button:disabled{opacity:.35}
+.monthnav strong{font-size:16px;min-width:7.5em;text-align:center}
+
+.tips{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.tips li{display:grid;grid-template-columns:4px 1fr;gap:12px;align-items:stretch}
+.tips li::before{content:"";border-radius:2px;background:var(--muted)}
+.tips li.good::before{background:var(--good)} .tips li.warn::before{background:var(--warn)} .tips li.bad::before{background:var(--bad)} .tips li.pl::before{background:var(--pool)} .tips li.fd::before{background:var(--fund)}
+.tips b{display:block}
+.ai-out{white-space:pre-wrap;background:var(--sunk);border-radius:10px;padding:12px 14px;font-size:14px}
+
+.pool-hero{background:var(--pool-soft);border-color:transparent}
+.pool-hero .big{color:var(--pool)}
+.fund-hero{background:var(--fund-soft);border-color:transparent}
+.fund-hero .big{color:var(--fund)}
+.goal{display:grid;gap:6px;padding:12px 0;border-top:1px solid var(--line)}
+.goal:first-child{border-top:0;padding-top:0}
+.goal .meter > span{background:var(--pool)}
+.chart{width:100%;overflow:hidden}
+.chart svg{display:block}
+.inline-form{display:grid;grid-template-columns:1fr 9em 9.5em;gap:8px;align-items:end;background:var(--sunk);border-radius:12px;padding:12px}
+.inline-form .acts{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+@media (max-width:520px){.inline-form{grid-template-columns:1fr 1fr}.inline-form .full{grid-column:1/-1}}
+
+.fundcard{display:grid;gap:8px;padding:14px 0;border-top:1px solid var(--line)}
+.fundcard:first-child{border-top:0;padding-top:0}
+.fundcard .bal{font-family:var(--f-num);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.fundcard .bal.neg{color:var(--bad)}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.facts div{background:var(--sunk);border-radius:10px;padding:6px 10px;min-width:0}
+.facts b{display:block;font-family:var(--f-num);font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.field{display:grid;gap:4px;min-width:0}
+.field label,.field .lab{font-size:13px;color:var(--muted)}
+.yen{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:0 10px;min-width:0}
+.yen span{color:var(--muted)}
+.yen input{border:0;background:transparent;width:100%;min-width:0;padding:9px 6px;font-family:var(--f-num);text-align:right;outline:none}
+.yen:focus-within{border-color:var(--accent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:480px){.grid2{grid-template-columns:1fr}}
+.catrow{display:grid;grid-template-columns:auto minmax(0,1fr) 8.5em 9em auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.catrow:first-child{border-top:0}
+.catrow .sub{grid-column:2/-1;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.catrow .sub .yen{width:9em}
+@media (max-width:560px){
+  .catrow{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr) auto;grid-template-areas:"c n n d" ". t b b"}
+  .catrow > [data-color]{grid-area:c}.catrow > .cn{grid-area:n}.catrow > .ct{grid-area:t}.catrow > .cb{grid-area:b}.catrow > .cd{grid-area:d}
+}
+.alloc{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--sunk)}
+.alloc span{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+.switch{display:flex;gap:10px;align-items:flex-start}
+.switch input{width:20px;height:20px;accent-color:var(--accent);margin-top:2px;flex:none}
+.banner{background:color-mix(in srgb,var(--accent) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));border-radius:var(--r);padding:14px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.saved{font-size:12px;color:var(--good);font-weight:700;opacity:0;transition:opacity .2s}
+.saved.on{opacity:1}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg button{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 8px;text-align:left;line-height:1.35}
+.seg button b{display:block;font-size:14px}
+.seg button span{font-size:11.5px;color:var(--muted)}
+.seg button[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface))}
+.person{display:grid;gap:8px;padding:14px 0;border-top:1px solid var(--line)}
+.person:first-child{border-top:0;padding-top:0}
+.person .pbal{font-family:var(--f-num);font-weight:600;font-variant-numeric:tabular-nums;margin-left:auto}
+.plus{color:var(--good)} .minus{color:var(--bad)}
+details.more summary{cursor:pointer;color:var(--muted);font-size:13px}
+.share{display:grid;grid-template-columns:1fr 9em;gap:8px;margin-top:8px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:12px;display:flex;gap:12px;align-items:center;z-index:20;max-width:calc(100% - 32px);font-size:14px;box-shadow:0 6px 20px rgb(0 0 0 / .2)}
+.toast button{background:transparent;border:1px solid currentColor;color:inherit;border-radius:8px;padding:3px 10px;font-size:13px;white-space:nowrap}
+@media (min-width:720px){.toast{bottom:calc(24px + env(safe-area-inset-bottom,0px))}}
+@media (prefers-reduced-motion:no-preference){.meter > span{transition:width .4s ease}.toast{animation:up .2s ease}@keyframes up{from{transform:translate(-50%,8px);opacity:0}}}
+
+.stack-lg{display:grid;gap:16px}
+.subtabs{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px;background:var(--sunk);padding:4px;border-radius:12px}
+.subtabs button{border:0;background:transparent;border-radius:9px;padding:8px 10px;text-align:left;line-height:1.3;color:var(--muted);min-width:0}
+.subtabs button b{display:block;font-size:14px}
+.subtabs button span{font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.subtabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+.linkbtn{border:0;background:transparent;color:var(--accent);font-weight:700;font-size:13px;padding:4px 2px}
+details.fold{padding:0}
+details.fold > summary{list-style:none;display:flex;align-items:center;gap:10px;padding:16px;cursor:pointer}
+details.fold > summary::-webkit-details-marker{display:none}
+details.fold > summary::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);flex:none}
+details.fold[open] > summary::after{transform:rotate(-135deg)}
+details.fold > summary .small{margin-left:auto}
+.fold-body{padding:0 16px 16px}
+.inline-form.two{grid-template-columns:1fr 1fr}
+.wallets{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.wallet{border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;text-align:left;display:grid;gap:2px;min-width:0}
+.wallet b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wallet .num{font-size:16px;font-weight:600}
+.wallet[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.wallet.add{border-style:dashed;color:var(--accent);font-weight:700;place-content:center;text-align:center;min-height:64px}
+.ledger{width:100%;border-collapse:collapse;font-size:14px}
+.ledger th{font-size:11px;letter-spacing:.06em;color:var(--muted);font-weight:500;text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+.ledger td{padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.ledger td.n,.ledger th.n{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ledger td.d{white-space:nowrap;color:var(--muted);font-size:13px}
+.ledger tr.in td.n:first-of-type{color:var(--good)}
+.ledger-wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">まいつき家計簿</div>
+    <div class="top-right">
+      <div class="sync" id="sync"><i></i><span>準備中…</span></div>
+      <button class="gear" id="gear" aria-pressed="false" aria-label="設定"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>設定</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="画面切り替え">
+    <button role="tab" id="t-rec" aria-selected="true" data-tab="rec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>記録</button>
+    <button role="tab" id="t-ana" aria-selected="false" data-tab="ana"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>分析</button>
+    <button role="tab" id="t-save" aria-selected="false" data-tab="save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="7" rx="7" ry="3"/><path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/></svg>貯める</button>
+    <button role="tab" id="t-oth" aria-selected="false" data-tab="oth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6M14 15c.9-.6 1.9-1 3-1 2.8 0 5 2.2 5 5"/></svg>人のお金</button>
+  </nav>
+
+  <!-- 記録 -->
+  <section class="panel" id="p-rec" role="tabpanel" aria-labelledby="t-rec">
+    <div class="banner" id="welcome" hidden>
+      <div><b>はじめに予算を決めましょう</b><div class="small muted">いまは初期値の予算が入っています。右上の「設定」で自分用に変えてください。</div></div>
+      <button class="btn sm" id="go-set">予算を設定する</button>
+    </div>
+    <div class="banner" id="bk-remind" hidden>
+      <div><b id="bk-remind-t">バックアップをとりましょう</b><div class="small muted">データはこのスマホの中だけにあります。機種変更や故障に備えて、ときどき書き出してください。</div></div>
+      <button class="btn sm" id="bk-remind-go">書き出す</button>
+    </div>
+
+    <div class="card stack">
+      <div class="row between">
+        <span class="label" id="sum-month">今月</span>
+        <span class="small muted" id="sum-days"></span>
+      </div>
+      <div>
+        <div class="label">今月あと使えるお金</div>
+        <div class="big" id="sum-left">¥0</div>
+      </div>
+      <div class="meter" id="sum-meter" aria-hidden="true"><span></span><i class="pace"></i></div>
+      <div class="kv">
+        <div><span class="label">使った</span><b id="sum-spent">¥0</b></div>
+        <div><span class="label">予算</span><b id="sum-budget">¥0</b></div>
+        <div><span class="label">1日あたり</span><b id="sum-daily">¥0</b></div>
+      </div>
+      <div class="small muted" id="sum-fund"></div>
+    </div>
+
+    <form class="card stack" id="rec-form" autocomplete="off">
+      <div class="row between">
+        <h2>支出を記録</h2>
+        <span class="stamp" title="日付は自動で入ります"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="today-stamp"></span></span>
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="ジャンル"></div>
+      <label class="amount" for="amt"><span>¥</span><input id="amt" inputmode="numeric" placeholder="0" aria-label="金額"></label>
+      <input class="text-in" id="memo" placeholder="メモ（任意）例：スーパー、ランチ" maxlength="40" aria-label="メモ">
+      <button class="btn wide" id="rec-btn" type="submit" disabled>記録する</button>
+      <div class="small muted" id="rec-hint"></div>
+    </form>
+
+    <div class="card stack">
+      <div class="row between"><h2>最近の記録</h2><button class="linkbtn" id="see-all" type="button">すべて見る ›</button></div>
+      <div class="list" id="recent"></div>
+    </div>
+  </section>
+
+  <!-- 分析 -->
+  <section class="panel" id="p-ana" role="tabpanel" aria-labelledby="t-ana" hidden>
+    <div class="row between">
+      <div class="monthnav"><button id="m-prev" aria-label="前の月">‹</button><strong id="m-label"></strong><button id="m-next" aria-label="次の月">›</button></div>
+      <span class="small muted" id="m-total"></span>
+    </div>
+    <div class="card stack">
+      <h2>節約アドバイス</h2>
+      <ul class="tips" id="tips"></ul>
+      <div class="stack" id="ai-box" hidden>
+        <button class="btn sm ghost" id="ai-btn" style="justify-self:start">AIにくわしく相談する</button>
+        <div class="ai-out" id="ai-out" hidden></div>
+      </div>
+    </div>
+    <div class="card stack">
+      <div class="row between"><h2>ジャンル別</h2><span class="small muted" id="pace-note"></span></div>
+      <div id="cats"></div>
+    </div>
+    <details class="card fold" id="month-fold">
+      <summary><h2>この月の記録一覧</h2><span class="small muted" id="month-count"></span></summary>
+      <div class="list fold-body" id="month-list"></div>
+    </details>
+  </section>
+
+  <!-- 貯める -->
+  <section class="panel" id="p-save" role="tabpanel" aria-labelledby="t-save" hidden>
+    <div class="subtabs" role="tablist" data-group="save">
+      <button type="button" data-sub="pool" aria-selected="true"><b>プール</b><span>旅行・大きな買い物</span></button>
+      <button type="button" data-sub="fund" aria-selected="false"><b>特別費</b><span>服・美容など定期的な出費</span></button>
+    </div>
+
+    <div class="stack-lg" data-pane="save:pool">
+      <div class="card pool-hero stack">
+        <div class="label">いまのプール残高</div>
+        <div class="big" id="pool-bal">¥0</div>
+        <div class="small" id="pool-break"></div>
+        <div class="row"><button class="btn sm pool" id="wd-open" type="button">プールから使う</button></div>
+        <form class="inline-form two" id="wd-form" autocomplete="off" hidden>
+          <div class="field"><label for="wd-amt">金額</label><div class="yen"><span>¥</span><input id="wd-amt" inputmode="numeric" placeholder="0"></div></div>
+          <div class="field"><label for="wd-goal">どの目標に使う？</label><select id="wd-goal" class="text-in"></select></div>
+          <div class="field full"><label for="wd-memo">メモ</label><input class="text-in" id="wd-memo" placeholder="例：沖縄旅行の航空券" maxlength="40"></div>
+          <div class="acts"><button class="btn sm ghost" type="button" id="wd-cancel">やめる</button><button class="btn sm pool" id="wd-btn" type="submit" disabled>引き出す</button></div>
+        </form>
+      </div>
+      <div class="card stack">
+        <div class="row between"><h2>目標</h2><button class="btn sm" id="goal-open" type="button">＋ 目標を追加</button></div>
+        <form class="inline-form" id="goal-form" hidden autocomplete="off">
+          <div class="field full"><label for="g-name">目標の名前</label><input class="text-in" id="g-name" placeholder="例：夏の沖縄旅行" maxlength="20"></div>
+          <div class="field"><label for="g-target">金額</label><div class="yen"><span>¥</span><input id="g-target" inputmode="numeric" placeholder="100,000"></div></div>
+          <div class="field"><label for="g-due">いつまでに（任意）</label><input class="text-in" type="month" id="g-due"></div>
+          <div class="acts"><button class="btn sm ghost" type="button" id="goal-cancel">やめる</button><button class="btn sm pool" type="submit" id="goal-save">追加する</button></div>
+        </form>
+        <div id="goals"></div>
+      </div>
+      <details class="card fold" id="chart-fold">
+        <summary><h2>これからの貯まり方</h2><span class="small muted" id="chart-note"></span></summary>
+        <div class="fold-body stack"><div class="chart" id="chart"></div><div class="legend" id="chart-legend"></div></div>
+      </details>
+      <details class="card fold">
+        <summary><h2>プールの出し入れ履歴</h2></summary>
+        <div class="list fold-body" id="wd-list"></div>
+      </details>
+    </div>
+
+    <div class="stack-lg" data-pane="save:fund" hidden>
+      <div class="card fund-hero stack">
+        <div class="label">特別費の残高（合計）</div>
+        <div class="big" id="fund-total">¥0</div>
+        <div class="small" id="fund-sub"></div>
+        <p class="small muted">毎月少しずつ取り分けて、使うときはその残高から払います。毎月の予算ともプールとも別に管理します。記録は「記録」タブで紫のジャンルを選ぶだけです。</p>
+      </div>
+      <div class="card stack">
+        <div class="row between"><h2>ジャンルごとの積立</h2><button class="linkbtn" id="fund-set" type="button">ジャンルを設定 ›</button></div>
+        <div id="funds"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 人のお金 -->
+  <section class="panel" id="p-oth" role="tabpanel" aria-labelledby="t-oth" hidden>
+    <div class="subtabs" role="tablist" data-group="oth">
+      <button type="button" data-sub="lend" aria-selected="true"><b>貸し借り</b><span>立て替え・返すお金</span></button>
+      <button type="button" data-sub="gift" aria-selected="false"><b>もらったお金</b><span>返さないお金の使い道</span></button>
+    </div>
+
+    <div class="stack-lg" data-pane="oth:lend">
+      <div class="card">
+        <div class="kv" style="grid-template-columns:1fr 1fr">
+          <div><span class="label">返ってくる予定</span><b id="o-in" class="plus">¥0</b></div>
+          <div><span class="label">返す・渡す予定</span><b id="o-out" class="minus">¥0</b></div>
+        </div>
+      </div>
+      <form class="card stack" id="o-form" autocomplete="off">
+        <div class="row between"><h2>お金の出し入れを記録</h2><span class="stamp" id="o-stamp"></span></div>
+        <div class="field"><label for="o-who">相手</label><input class="text-in" id="o-who" list="o-people" placeholder="例：佐藤さん、母、サークル会計" maxlength="20"><datalist id="o-people"></datalist></div>
+        <div class="seg" id="o-kind" role="group" aria-label="種類">
+          <button type="button" data-k="lend" aria-pressed="true"><b>立て替えた・貸した</b><span>あとで返ってくる</span></button>
+          <button type="button" data-k="borrow" aria-pressed="false"><b>借りた・預かった</b><span>あとで返す・渡す</span></button>
+          <button type="button" data-k="back" aria-pressed="false"><b>返してもらった</b><span>貸した分が戻った</span></button>
+          <button type="button" data-k="repay" aria-pressed="false"><b>返した・渡した</b><span>借りた分を戻した</span></button>
+        </div>
+        <label class="amount" for="o-amt"><span>¥</span><input id="o-amt" inputmode="numeric" placeholder="0" aria-label="相手の分の金額"></label>
+        <input class="text-in" id="o-memo" placeholder="メモ（任意）例：飲み会の立て替え" maxlength="40" aria-label="メモ">
+        <details class="more" id="o-share-box">
+          <summary>割り勘などで自分の分も払った（家計簿にも記録）</summary>
+          <div class="share">
+            <select class="text-in" id="o-share-cat" aria-label="自分の分のジャンル"></select>
+            <div class="yen"><span>¥</span><input id="o-share-amt" inputmode="numeric" placeholder="自分の分" aria-label="自分の分の金額"></div>
+          </div>
+        </details>
+        <button class="btn wide" id="o-btn" type="submit" disabled>記録する</button>
+      </form>
+      <div class="card stack">
+        <h2>相手ごとの残り</h2>
+        <div id="people"></div>
+      </div>
+    </div>
+
+    <div class="stack-lg" data-pane="oth:gift" hidden>
+      <p class="intro">仕送りやお祝い、預かった活動費など、返す必要はないけれど何に使ったかを残したいお金です。もらった額から使った分を引いて、残りと使い道を一覧で確認できます。</p>
+      <div class="wallets" id="wallets"></div>
+      <form class="inline-form" id="w-new" hidden autocomplete="off">
+        <div class="field full"><label for="w-name">何のお金？</label><input class="text-in" id="w-name" placeholder="例：母からの仕送り、出産祝い、部活の活動費" maxlength="24"></div>
+        <div class="field"><label for="w-amt">もらった金額</label><div class="yen"><span>¥</span><input id="w-amt" inputmode="numeric" placeholder="0"></div></div>
+        <div class="field"><label for="w-date">もらった日</label><input class="text-in" type="date" id="w-date"></div>
+        <div class="acts"><button class="btn sm ghost" type="button" id="w-cancel">やめる</button><button class="btn sm" type="submit">追加する</button></div>
+      </form>
+      <div id="wallet-detail" class="stack-lg"></div>
+    </div>
+  </section>
+
+  <!-- 設定 -->
+  <section class="panel" id="p-set" role="tabpanel" aria-label="設定" hidden>
+    <div class="row between"><h2 style="font-size:18px">設定</h2><span class="saved" id="saved">✓ 保存して反映しました</span></div>
+    <div class="subtabs" role="tablist" data-group="set">
+      <button type="button" data-sub="alloc" aria-selected="true"><b>お金の割り振り</b><span>収入・固定費・プール</span></button>
+      <button type="button" data-sub="cats" aria-selected="false"><b>ジャンル</b><span>予算と積立の金額</span></button>
+      <button type="button" data-sub="backup" aria-selected="false"><b>バックアップ</b><span>書き出し・読み込み</span></button>
+    </div>
+    <div class="card stack" data-pane="set:alloc">
+      <p class="small muted">数字を変えると、ほかの画面にすぐ反映されて自動で保存されます。</p>
+      <div class="grid2">
+        <div class="field"><label for="s-income">手取り月収</label><div class="yen"><span>¥</span><input id="s-income" inputmode="numeric" data-k="income"></div></div>
+        <div class="field"><label for="s-fixed">固定費（家賃・光熱費・通信など）</label><div class="yen"><span>¥</span><input id="s-fixed" inputmode="numeric" data-k="fixed"></div></div>
+        <div class="field"><label for="s-pool">毎月プールする額</label><div class="yen"><span>¥</span><input id="s-pool" inputmode="numeric" data-k="poolMonthly"></div></div>
+        <div class="field"><label for="s-init">すでに貯めてあるプール</label><div class="yen"><span>¥</span><input id="s-init" inputmode="numeric" data-k="poolInitial"></div></div>
+      </div>
+      <label class="switch" for="s-carry"><input type="checkbox" id="s-carry"><span><b>毎月の予算の余りもプールへ回す</b><br><span class="small muted">月が終わったとき、使わなかった毎月の予算をプールに足します。</span></span></label>
+      <div class="alloc" id="alloc"></div>
+      <div class="legend" id="alloc-legend"></div>
+      <div class="small" id="alloc-note"></div>
+    </div>
+    <div class="card stack" data-pane="set:cats" hidden>
+      <div class="row between"><span class="small muted">「毎月」は月ごとに使い切る予算、「特別費」は毎月取り分けてためるジャンル</span><span class="small muted num" id="cat-total"></span></div>
+      <div id="cat-edit"></div>
+      <button class="btn sm ghost" id="cat-add" style="justify-self:start" type="button">＋ ジャンルを追加</button>
+    </div>
+    <div class="stack-lg" data-pane="set:backup" hidden>
+      <div class="card stack">
+        <h2>バックアップを書き出す</h2>
+        <p class="small muted">支出・予算・プール・特別費・人のお金をすべて1つのファイルに保存します。機種変更のときや、別の版（スマホ用アプリ版など）へデータを移すときに使います。</p>
+        <div class="small" id="bk-last"></div>
+        <div class="row" id="bk-btns"><button class="btn sm" type="button" id="bk-json">バックアップを書き出す</button><button class="btn sm ghost" type="button" id="bk-csv">支出をCSVで書き出す</button></div>
+        <p class="small muted" id="bk-na" hidden>この表示ではファイルを書き出せません。claude.aiにログインした状態で開き直してください。</p>
+      </div>
+      <div class="card stack">
+        <h2>バックアップから読み込む</h2>
+        <p class="small muted">書き出したファイル（.json）を選ぶと、中身を確認してから読み込みます。いまのデータはファイルの内容に置き換わります。</p>
+        <input type="file" id="bk-file" accept=".json,application/json" class="text-in">
+        <div class="stack" id="bk-preview" hidden></div>
+      </div>
+    </div>
+    <div class="small muted" id="storage-note" style="padding-inline:2px"></div>
+  </section>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const yen = n => (n < 0 ? '−¥' : '¥') + Math.abs(Math.round(n)).toLocaleString('ja-JP');
+const digits = s => { const n = parseInt(String(s).replace(/[^\d]/g, ''), 10); return isNaN(n) ? 0 : n; };
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const mkey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+const addMonth = (k, n) => { const [y, m] = k.split('-').map(Number); return mkey(new Date(y, m - 1 + n, 1)); };
+const mLabel = k => { const [y, m] = k.split('-').map(Number); return `${y}年${m}月`; };
+const mShort = k => Number(k.split('-')[1]) + '月';
+const dim = k => { const [y, m] = k.split('-').map(Number); return new Date(y, m, 0).getDate(); };
+const monthsDiff = (a, b) => { const [ay, am] = a.split('-').map(Number), [by, bm] = b.split('-').map(Number); return (by - ay) * 12 + (bm - am); };
+const WD = ['日','月','火','水','木','金','土'];
+const now = () => new Date();
+const curKey = () => mkey(now());
+const COLORS = 8;
+const kc = c => `var(--k${((c && c.color) || 0) % COLORS + 1})`;
+
+function defaults(){
+  const k = curKey();
+  const cats = [['食費',40000,'m'],['日用品',8000,'m'],['交通費',10000,'m'],['交際費',15000,'m'],['趣味・娯楽',10000,'m'],['その他',6000,'m'],
+    ['衣服・美容',8000,'s'],['医療',3000,'s'],['冠婚葬祭・行事',5000,'s']]
+    .map(([name, budget, t], i) => ({ id: 'c' + (i + 1), name, budget, type: t === 's' ? 'sinking' : 'monthly', init: 0, color: i % COLORS }));
+  const s = { ver: 2, income: 0, fixed: 0, poolMonthly: 20000, poolInitial: 0, carryover: true, startMonth: k, categories: cats, goals: [], history: [] };
+  s.history = [snapshotPlan(s, k)];
+  return s;
+}
+function snapshotPlan(s, k){
+  const cats = {}; for (const c of s.categories) cats[c.id] = +c.budget || 0;
+  return { from: k, pool: +s.poolMonthly || 0, budget: s.categories.filter(c => c.type !== 'sinking').reduce((a, c) => a + (+c.budget || 0), 0), cats };
+}
+
+const S = { settings: defaults(), months: {}, pool: { moves: [] }, others: { people: [], moves: [], wallets: [], wmoves: [] }, isNew: true, loaded: false, mode: 'pending' };
+const view = { tab: 'rec', month: curKey(), cat: null, okind: 'lend', editGoal: null, sub: { save: 'pool', oth: 'lend', set: 'alloc' }, wallet: null, wtype: 'use' };
+
+/* ---------- storage ---------- */
+let col = null, editingSettings = false, DL = null;
+const pending = {}, inflight = {};
+function bodyFor(id){
+  if (id === 'settings') return S.settings;
+  if (id === 'pool') return S.pool;
+  if (id === 'others') return S.others;
+  return S.months[id.slice(2)] || { entries: [] };
+}
+function save(id){
+  if (id === 'settings') S.isNew = false;
+  if (S.mode === 'local'){ saveLocal(); return; }
+  if (!col) return;
+  pending[id] = true; flush(id);
+}
+async function flush(id){
+  if (inflight[id]) return;
+  inflight[id] = true;
+  while (pending[id]){
+    pending[id] = false;
+    try { await col.doc(id).set(clone(bodyFor(id))); setSync('ok', '保存済み'); }
+    catch (e){
+      if (e && e.code === 'unavailable'){ await new Promise(r => setTimeout(r, 600 + Math.random() * 800)); pending[id] = true; continue; }
+      setSync('warn', '保存できませんでした');
+      toast(e && e.code === 'quota_exceeded' ? '保存容量がいっぱいです。古い記録を削除してください。' : '保存できませんでした。通信状況を確認してもう一度操作してください。');
+    }
+  }
+  inflight[id] = false;
+}
+const LKEY = 'maitsuki-kakeibo-v1';
+function saveLocal(){ try { localStorage.setItem(LKEY, JSON.stringify({ settings: S.settings, months: S.months, pool: S.pool, others: S.others })); } catch (e) {} }
+function useLocal(reason){
+  S.mode = 'local';
+  try {
+    const raw = localStorage.getItem(LKEY);
+    if (raw){ const d = JSON.parse(raw); S.settings = normalize(d.settings); S.months = d.months || {}; S.pool = normPool(d.pool); S.others = normOthers(d.others); S.isNew = false; }
+  } catch (e) {}
+  S.loaded = true;
+  setSync('warn', 'この端末に保存');
+  $('#storage-note').textContent = reason || 'この表示ではアカウントに保存できないため、データはこのブラウザ内に保存されます。ブラウザのデータを消すと記録も消えます。';
+  renderAll();
+}
+function normPool(p){ return { moves: Array.isArray(p && p.moves) ? p.moves : [] }; }
+function normOthers(o){ const a = k => Array.isArray(o && o[k]) ? o[k] : []; return { people: a('people'), moves: a('moves'), wallets: a('wallets'), wmoves: a('wmoves') }; }
+function normalize(raw){
+  const d = defaults();
+  const s = Object.assign({}, d, raw ? clone(raw) : {});
+  if (!Array.isArray(s.categories) || !s.categories.length) s.categories = d.categories;
+  if (!Array.isArray(s.goals)) s.goals = [];
+  if (!raw || raw.ver !== 2){
+    // 旧バージョン: 「衣服・美容」「医療」は特別費（積立）として扱う
+    for (const c of s.categories) if (!c.type) c.type = /衣|美容|医療|冠婚|葬祭/.test(c.name) ? 'sinking' : 'monthly';
+    s.ver = 2;
+  }
+  for (const c of s.categories){ if (!c.type) c.type = 'monthly'; if (c.init == null) c.init = 0; }
+  if (!Array.isArray(s.history) || !s.history.length) s.history = [snapshotPlan(s, s.startMonth)];
+  return s;
+}
+const STANDALONE = !!document.querySelector('meta[name="kakeibo-standalone"]');
+async function init(){
+  renderAll();
+  if (STANDALONE){
+    useLocal('データはこのスマホ（ブラウザ）の中だけに保存されます。機種変更やアプリの削除で消えないよう、「バックアップ」から定期的に書き出してください。');
+    setSync('ok', 'この端末に保存');
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
+    return;
+  }
+  window.claude && window.claude.use && window.claude.use('downloads').then(d => { DL = d; renderBackup(); }).catch(() => {});
+  const c = window.claude;
+  if (!c || typeof c.use !== 'function'){ useLocal(); return; }
+  let db = null, user = null;
+  try { [db, user] = await Promise.all([c.use('db'), c.use('user')]); } catch (e) {}
+  c.use('sample').then(ai => { if (ai){ window.__ai = ai; $('#ai-box').hidden = false; } }).catch(() => {});
+  if (!db || !user){ useLocal(); return; }
+  let id = null; try { id = await user.id(); } catch (e) {}
+  if (!id){ useLocal(); return; }
+  S.mode = 'db';
+  col = db.collection('data/users/' + id);
+  $('#storage-note').textContent = 'データはあなたのアカウントにだけ保存されます。この家計簿を共有しても、ほかの人からあなたの記録は見えません。スマホとPCで同じ記録を使えます。';
+  setSync('', '読み込み中…');
+  const timer = setTimeout(() => { if (!S.loaded) setSync('warn', 'データに接続できません'); }, 10000);
+  col.onSnapshot(snap => {
+    let sawSettings = false;
+    for (const d of snap.docs){
+      const id = d.id;
+      if (id === 'settings') sawSettings = true;
+      if (pending[id] || inflight[id] || (id === 'settings' && editingSettings)) continue; // 編集中・保存中の内容は上書きしない
+      const body = clone(d.data() || {}); // 届いたデータは凍結されているので、必ず複製してから使う
+      if (id === 'settings') S.settings = normalize(body);
+      else if (id === 'pool') S.pool = normPool(body);
+      else if (id === 'others') S.others = normOthers(body);
+      else if (id.startsWith('m-')) S.months[id.slice(2)] = { entries: Array.isArray(body.entries) ? body.entries : [] };
+    }
+    if (sawSettings) S.isNew = false;
+    if (!snap.metadata.fromCache){ S.loaded = true; clearTimeout(timer); setSync('ok', '同期済み'); }
+    else S.loaded = true;
+    renderAll();
+  }, err => {
+    clearTimeout(timer);
+    setSync('warn', err && err.code === 'revoked' ? '閲覧のみ' : '同期が止まりました');
+    S.loaded = true; renderAll();
+  });
+}
+
+/* ---------- calculations ---------- */
+const isFund = c => c && c.type === 'sinking';
+const monthlyCats = () => S.settings.categories.filter(c => !isFund(c));
+const fundCats = () => S.settings.categories.filter(isFund);
+function sumBudget(list){ return list.reduce((a, c) => a + (+c.budget || 0), 0); }
+function entries(k){ return (S.months[k] && S.months[k].entries) || []; }
+function catById(id){ return S.settings.categories.find(c => c.id === id); }
+function catName(e){ const c = catById(e.cat); return c ? c.name : (e.catName || '削除したジャンル'); }
+function entryIsFund(e){ const c = catById(e.cat); return c ? isFund(c) : !!e.fund; }
+function spentBy(k){
+  const m = {}; let monthly = 0, fund = 0;
+  for (const e of entries(k)){ m[e.cat] = (m[e.cat] || 0) + e.amount; if (entryIsFund(e)) fund += e.amount; else monthly += e.amount; }
+  return { m, monthly, fund };
+}
+function planFor(k){
+  const h = S.settings.history.filter(x => x.from <= k).sort((a, b) => a.from < b.from ? 1 : -1)[0];
+  return h || snapshotPlan(S.settings, k);
+}
+function recordHistory(){
+  const k = curKey(), s = S.settings;
+  s.history = s.history.filter(h => h.from !== k);
+  s.history.push(snapshotPlan(s, k));
+}
+function monthKeys(){ const out = []; let k = S.settings.startMonth; const cur = curKey(); let g = 0; while (k <= cur && g++ < 600){ out.push(k); k = addMonth(k, 1); } return out; }
+function poolState(){
+  const s = S.settings, cur = curKey();
+  let deposits = 0, carry = 0; const monthly = [];
+  for (const k of monthKeys()){
+    const p = planFor(k);
+    deposits += p.pool;
+    let c = 0;
+    if (k < cur && s.carryover){ c = Math.max(0, p.budget - spentBy(k).monthly); carry += c; }
+    monthly.push({ k, pool: p.pool, carry: c });
+  }
+  const out = S.pool.moves.reduce((a, m) => a + m.amount, 0);
+  return { bal: (+s.poolInitial || 0) + deposits + carry - out, deposits, carry, out, monthly };
+}
+function fundState(c){
+  let dep = 0, spent = 0, yearSpent = 0, last = null, count = 0;
+  const y = String(now().getFullYear());
+  for (const k of monthKeys()){ const p = planFor(k); dep += (p.cats && p.cats[c.id] != null) ? p.cats[c.id] : (+c.budget || 0); }
+  for (const k in S.months) for (const e of entries(k)) if (e.cat === c.id){
+    spent += e.amount; count++; if (k.startsWith(y)) yearSpent += e.amount; if (!last || e.ts > last.ts) last = e;
+  }
+  return { bal: (+c.init || 0) + dep - spent, dep, spent, yearSpent, last, count };
+}
+function monthStats(k){
+  const cur = curKey(), isCur = k === cur, days = dim(k);
+  const day = isCur ? now().getDate() : (k < cur ? days : 0);
+  const budget = isCur ? sumBudget(monthlyCats()) : planFor(k).budget;
+  const sp = spentBy(k);
+  return { isCur, days, day, pace: day / days, budget, spentMap: sp.m, total: sp.monthly, fundSpent: sp.fund, left: budget - sp.monthly, remainDays: isCur ? days - day + 1 : 0 };
+}
+function catStatus(spent, budget, st){
+  if (budget <= 0) return spent > 0 ? ['bad','予算なし'] : ['good','—'];
+  if (spent > budget) return ['bad','超過'];
+  if (!st.isCur) return ['good','予算内'];
+  const r = spent / budget;
+  if (r > st.pace + 0.12 && r > 0.25) return ['warn','ペース速め'];
+  return ['good','順調'];
+}
+function goalPlan(){
+  const s = S.settings, ps = poolState();
+  let cum = 0;
+  return s.goals.filter(g => !g.done).map(g => {
+    const t = +g.target || 0; cum += t;
+    const have = Math.max(0, Math.min(t, ps.bal - (cum - t)));
+    const need = cum - ps.bal;
+    const months = need <= 0 ? 0 : (s.poolMonthly > 0 ? Math.ceil(need / s.poolMonthly) : Infinity);
+    const eta = months === Infinity ? null : addMonth(curKey(), months);
+    let shortfall = 0, shortPerMonth = 0;
+    if (g.due){
+      const m = Math.max(0, monthsDiff(curKey(), g.due));
+      shortfall = Math.max(0, cum - (ps.bal + s.poolMonthly * m));
+      shortPerMonth = shortfall > 0 ? Math.ceil(shortfall / Math.max(1, m) / 100) * 100 : 0;
+    }
+    return { ...g, target: t, cum, have, months, eta, shortfall, shortPerMonth };
+  });
+}
+const KIND = { lend: ['立て替えた・貸した', 1], borrow: ['借りた・預かった', -1], back: ['返してもらった', -1], repay: ['返した・渡した', 1] };
+function personBalance(pid){ return S.others.moves.filter(m => m.pid === pid).reduce((a, m) => a + KIND[m.kind][1] * m.amount, 0); }
+
+/* ---------- rendering ---------- */
+function setSync(kind, text){ const el = $('#sync'); el.className = 'sync ' + kind; el.querySelector('span').textContent = text; }
+const focusIn = sel => { const a = document.activeElement; return a && a !== document.body && $(sel) && $(sel).contains(a); };
+function renderAll(){
+  $('#welcome').hidden = !(S.loaded && S.isNew);
+  renderData();
+  if (!focusIn('#p-set')) renderSet();
+}
+function renderData(){ renderRec(); renderAna(); renderFund(); renderPool(); renderOthers(); renderGifts(); renderBackup(); }
+function fmtDate(ts, withDay = true){ const d = new Date(ts); return `${d.getMonth() + 1}/${d.getDate()}` + (withDay ? `(${WD[d.getDay()]})` : ''); }
+function todayText(){ const d = now(); return `${d.getMonth() + 1}月${d.getDate()}日(${WD[d.getDay()]})`; }
+
+function renderRec(){
+  const k = curKey(), st = monthStats(k), d = now();
+  $('#sum-month').textContent = mLabel(k);
+  $('#sum-days').textContent = `今日は${d.getDate()}日 ・ 残り${st.remainDays}日`;
+  $('#today-stamp').textContent = todayText();
+  $('#o-stamp').textContent = todayText();
+  const left = $('#sum-left'); left.textContent = yen(st.left); left.classList.toggle('neg', st.left < 0);
+  $('#sum-spent').textContent = yen(st.total);
+  $('#sum-budget').textContent = yen(st.budget);
+  $('#sum-daily').textContent = yen(Math.max(0, st.left) / Math.max(1, st.remainDays));
+  const bar = $('#sum-meter span'); const r = st.budget ? st.total / st.budget : 0;
+  bar.style.width = Math.min(100, r * 100) + '%'; bar.classList.toggle('over', r > 1);
+  $('#sum-meter .pace').style.left = `calc(${st.pace * 100}% - 1px)`;
+  $('#sum-fund').textContent = st.fundSpent ? `このほか、特別費の積立から今月 ${yen(st.fundSpent)} 使いました（毎月の予算には含みません）。` : '';
+
+  const cats = S.settings.categories;
+  if (view.cat && !catById(view.cat)) view.cat = null;
+  $('#chips').innerHTML = cats.map(c => {
+    const f = isFund(c);
+    const lf = f ? fundState(c).bal : (+c.budget || 0) - (st.spentMap[c.id] || 0);
+    return `<button type="button" class="chip${f ? ' fund' : ''}" data-cat="${esc(c.id)}" aria-pressed="${view.cat === c.id}"><span class="dot" style="background:${kc(c)}"></span><span class="nm">${esc(c.name)}</span><span class="lf">${f ? '積立' : '残'}${esc(yen(lf))}</span></button>`;
+  }).join('');
+  updateRecBtn();
+
+  const list = entries(k).slice().sort((a, b) => b.ts - a.ts);
+  $('#recent').innerHTML = list.length ? list.slice(0, 5).map(itemHTML).join('') :
+    `<div class="empty">まだ記録がありません。上でジャンルを選んで金額を入れると、ここに今日の日付で並びます。</div>`;
+}
+function itemHTML(e){
+  const c = catById(e.cat), f = entryIsFund(e);
+  return `<div class="item"><span class="dot" style="background:${kc(c || { color: 7 })}"></span>
+    <div class="main"><div><b>${esc(catName(e))}</b>${f ? ' <span class="pill fd">特別費</span>' : ''}${e.memo ? ` <span class="muted small">${esc(e.memo)}</span>` : ''}</div><div class="small muted">${fmtDate(e.ts)}</div></div>
+    <span class="amt">${yen(e.amount)}</span><button class="del" data-del="${esc(e.id)}" data-m="${esc(mkey(new Date(e.ts)))}" aria-label="この記録を削除">削除</button></div>`;
+}
+function updateRecBtn(){
+  const ok = S.loaded && view.cat && digits($('#amt').value) > 0;
+  $('#rec-btn').disabled = !ok;
+  const h = $('#rec-hint');
+  if (!S.loaded) h.textContent = 'データを読み込んでいます…';
+  else if (view.cat){ const c = catById(view.cat); h.textContent = isFund(c) ? `「${c.name}」は特別費です。積立残高から引かれ、毎月の予算は減りません。` : `「${c.name}」に今日の日付で記録します。`; }
+  else h.textContent = 'ジャンルを選んで金額を入れてください。日付は今日の日付で記録されます。';
+}
+
+function renderAna(){
+  const k = view.month, cur = curKey(), st = monthStats(k);
+  $('#m-label').textContent = mLabel(k);
+  $('#m-next').disabled = k >= cur;
+  $('#m-prev').disabled = k <= addMonth(S.settings.startMonth, -12);
+  $('#m-total').textContent = `支出 ${yen(st.total)} / 予算 ${yen(st.budget)}`;
+  $('#pace-note').textContent = st.isCur ? `縦線は今日の位置（${Math.round(st.pace * 100)}%）` : '';
+  const rows = monthlyCats().map(c => ({ c, name: c.name, budget: +c.budget || 0, spent: st.spentMap[c.id] || 0 }));
+  for (const id in st.spentMap) if (!catById(id)) rows.push({ c: { color: 7 }, name: '削除したジャンル', budget: 0, spent: st.spentMap[id] });
+  $('#cats').innerHTML = rows.map(x => {
+    const [cls, lbl] = catStatus(x.spent, x.budget, st);
+    const r = x.budget ? x.spent / x.budget : (x.spent ? 1 : 0);
+    const proj = st.isCur && st.day >= 3 ? x.spent / st.day * st.days : null;
+    return `<div class="cat"><div class="head"><span class="dot" style="background:${kc(x.c)}"></span><span class="nm">${esc(x.name)}</span><span class="pill ${cls}">${lbl}</span>
+      <span class="fig">${yen(x.spent)} <span class="muted">/ ${yen(x.budget)}</span></span></div>
+      <div class="meter thin"><span class="${r > 1 ? 'over' : ''}" style="width:${Math.min(100, r * 100)}%;${r > 1 ? '' : `background:${kc(x.c)}`}"></span>${st.isCur ? `<i class="pace" style="left:calc(${st.pace * 100}% - 1px)"></i>` : ''}</div>
+      <div class="small muted">${x.budget - x.spent >= 0 ? `残り ${yen(x.budget - x.spent)}` : `${yen(x.spent - x.budget)} オーバー`}${proj !== null && x.spent > 0 ? ` ・ 月末の見込み ${yen(proj)}` : ''}</div></div>`;
+  }).join('') || '<div class="empty">毎月のジャンルがありません。設定で追加してください。</div>';
+  renderTips();
+  const list = entries(k).slice().sort((a, b) => b.ts - a.ts);
+  $('#month-count').textContent = list.length ? `${list.length}件` : '';
+  if (!list.length){ $('#month-list').innerHTML = `<div class="empty">${mLabel(k)}の記録はありません。</div>`; return; }
+  let html = '', last = '';
+  for (const e of list){
+    const d = new Date(e.ts), dk = d.toDateString();
+    if (dk !== last){
+      const dayTotal = list.filter(x => new Date(x.ts).toDateString() === dk).reduce((a, x) => a + x.amount, 0);
+      html += `<div class="dayhead row between"><span>${d.getMonth() + 1}月${d.getDate()}日(${WD[d.getDay()]})</span><span class="num">${yen(dayTotal)}</span></div>`;
+      last = dk;
+    }
+    html += itemHTML(e);
+  }
+  $('#month-list').innerHTML = html;
+}
+
+const CAT_TIPS = [
+  [/食|グルメ|外食|ランチ|カフェ/, '週末にまとめ買いして献立を決めておくと、平日のコンビニや外食が減ります。昼食を週2回お弁当にすると月¥5,000前後浮きます。'],
+  [/交通|ガソリン|車/, 'よく使う区間は定期券や回数券、ICの還元制度を確認しましょう。近い距離は歩く・自転車にする日を決めるのも効きます。'],
+  [/交際|飲み|付き合/, '飲み会は月の回数を先に決めておくと使いすぎを防げます。二次会は1回おきにするだけでも差が出ます。'],
+  [/趣味|娯楽|サブスク|ゲーム/, 'サブスクを一覧にして、先月使わなかったものを止めましょう。欲しい物は24時間置いてから買うと衝動買いが減ります。'],
+  [/衣|服|美容|コスメ/, '買う前に手持ちの服と3通り組み合わせられるか考えると失敗が減ります。セール前に欲しいものリストを作っておきましょう。'],
+  [/日用|生活/, '洗剤やティッシュはまとめ買い・詰め替え用に。ドラッグストアのポイントデーに寄せると数%安くなります。'],
+  [/医療|病院|薬/, '薬はジェネリックを選ぶ、年10万円を超えそうなら医療費控除のためにレシートを残しましょう。'],
+];
+function tipFor(name){ const t = CAT_TIPS.find(([re]) => re.test(name)); return t ? t[1] : '内訳をメモで振り返り、なくても困らなかった支出に印をつけてみましょう。'; }
+
+function buildTips(){
+  const k = curKey(), st = monthStats(k), tips = [];
+  const cats = monthlyCats().map(c => ({ ...c, budget: +c.budget || 0, spent: st.spentMap[c.id] || 0 }));
+  const es = entries(k).filter(e => !entryIsFund(e));
+  if (!entries(k).length) tips.push(['', '今月はまだ記録がありません', '数日分の記録がたまると、ペースの速いジャンルや細かい出費の傾向をここでお知らせします。']);
+  const over = cats.filter(c => c.budget && c.spent > c.budget).sort((a, b) => (b.spent - b.budget) - (a.spent - a.budget));
+  for (const c of over.slice(0, 2)) tips.push(['bad', `${c.name}が予算を${yen(c.spent - c.budget)}超えています`, `ほかのジャンルの残りで埋めると、月末にプールへ回る余りが減ります。${tipFor(c.name)}`]);
+  if (st.day >= 3){
+    const fast = cats.filter(c => c.budget && c.spent <= c.budget && c.spent / c.budget > st.pace + 0.12 && c.spent / c.budget > 0.25)
+      .map(c => ({ ...c, proj: c.spent / st.day * st.days })).sort((a, b) => (b.proj - b.budget) - (a.proj - a.budget));
+    for (const c of fast.slice(0, 2)){
+      const perDay = Math.max(0, c.budget - c.spent) / st.remainDays;
+      tips.push(['warn', `${c.name}のペースが速めです`, `月の${Math.round(st.pace * 100)}%の時点で予算の${Math.round(c.spent / c.budget * 100)}%を使っています。このままだと月末に約${yen(Math.max(0, c.proj - c.budget))}オーバーの見込み。残り${st.remainDays}日は1日${yen(perDay)}以内に抑えると予算内に収まります。${tipFor(c.name)}`]);
+    }
+  }
+  const small = es.filter(e => e.amount < 1000);
+  if (small.length >= 6){
+    const sum = small.reduce((a, e) => a + e.amount, 0);
+    tips.push(['warn', `¥1,000未満の出費が${small.length}回、合計${yen(sum)}`, `1回あたり平均${yen(sum / small.length)}。少額でも回数が積み重なっています。週に2回減らすと、月に約${yen(sum / small.length * 8)}節約できます。`]);
+  }
+  for (const c of fundCats()){
+    const fs = fundState(c);
+    if (fs.bal < 0) tips.push(['fd', `特別費「${c.name}」の積立が${yen(-fs.bal)}足りません`, `今後の積立で埋まるまで約${Math.ceil(-fs.bal / Math.max(1, +c.budget || 1))}か月かかります。次の購入はそれまで待つか、毎月の積立額を見直しましょう。`]);
+  }
+  const prev = addMonth(k, -1), pe = entries(prev).filter(e => !entryIsFund(e));
+  if (pe.length && es.length){
+    const prevSame = pe.filter(e => new Date(e.ts).getDate() <= st.day).reduce((a, e) => a + e.amount, 0);
+    const diff = st.total - prevSame;
+    if (Math.abs(diff) >= 1000) tips.push([diff > 0 ? 'warn' : 'good', `先月の同じ日までより${yen(Math.abs(diff))}${diff > 0 ? '多く' : '少なく'}使っています`, diff > 0 ? '先月より増えているジャンルを上のバーで確認してみましょう。' : 'いいペースです。この差額はそのまま月末の余りになります。']);
+  }
+  if (st.day >= 3 && es.length){
+    const leftover = st.budget - st.total / st.day * st.days;
+    if (leftover > 0) tips.push(['pl', `月末に約${yen(leftover)}余る見込みです`, S.settings.carryover ? '余りは月が変わると自動でプールに入り、目標の達成が早まります。' : '設定で「毎月の予算の余りもプールへ回す」をオンにすると、余りが目標の資金になります。']);
+  }
+  for (const x of goalPlan().filter(x => x.due && x.shortPerMonth > 0).slice(0, 1))
+    tips.push(['pl', `「${x.name}」は目標月までに${yen(x.shortfall)}足りない見込み`, `毎月のプールをあと${yen(x.shortPerMonth)}増やすと${mLabel(x.due)}に間に合います。ペースの速いジャンルを抑えれば、その分を回せます。`]);
+  if (entries(k).length && !tips.some(t => t[0] === 'bad' || t[0] === 'warn')) tips.unshift(['good', '今月の毎月の予算はすべて予算内です', 'この調子です。余った分はプールへ回して、旅行や大きな買い物の資金にしましょう。']);
+  return tips.slice(0, 6);
+}
+function renderTips(){ $('#tips').innerHTML = buildTips().map(([c, t, b]) => `<li class="${c}"><div><b>${esc(t)}</b><span class="small">${esc(b)}</span></div></li>`).join(''); }
+
+function renderFund(){
+  const fc = fundCats();
+  let total = 0, monthly = 0;
+  const html = fc.map(c => {
+    const fs = fundState(c); total += fs.bal; monthly += +c.budget || 0;
+    const yearPlan = (+c.budget || 0) * 12;
+    const last = fs.last ? `${fmtDate(fs.last.ts)} ${yen(fs.last.amount)}${fs.last.memo ? '（' + esc(fs.last.memo) + '）' : ''}` : 'まだ使っていません';
+    const status = fs.bal < 0 ? '<span class="pill bad">不足</span>' : (fs.bal >= (+c.budget || 0) * 6 && c.budget ? '<span class="pill fd">たっぷり</span>' : '<span class="pill good">取り分け中</span>');
+    const ratio = yearPlan ? Math.min(1, fs.yearSpent / yearPlan) : 0;
+    return `<div class="fundcard"><div class="row"><span class="dot" style="background:${kc(c)}"></span><b>${esc(c.name)}</b>${status}<span class="bal ${fs.bal < 0 ? 'neg' : ''}" style="margin-left:auto">${yen(fs.bal)}</span></div>
+      <div class="facts"><div><span class="label">毎月の積立</span><b>${yen(c.budget)}</b></div><div><span class="label">今年使った</span><b>${yen(fs.yearSpent)}</b></div><div><span class="label">年間の予定</span><b>${yen(yearPlan)}</b></div></div>
+      <div class="meter thin" title="今年の使用額 / 年間の予定"><span style="width:${ratio * 100}%;background:${kc(c)}"></span></div>
+      <div class="small muted">最後に使った日：${last}</div></div>`;
+  }).join('');
+  $('#fund-total').textContent = yen(total);
+  $('#fund-sub').textContent = fc.length ? `${fc.length}ジャンル ・ 毎月 ${yen(monthly)} を取り分け` : '';
+  $('#funds').innerHTML = html || '<div class="empty">特別費のジャンルがありません。「積立ジャンルを設定」から、ジャンルの種類を「特別費（積立）」に変えてください。</div>';
+}
+
+function renderPool(){
+  const s = S.settings, ps = poolState(), st = monthStats(curKey());
+  $('#pool-bal').textContent = yen(ps.bal);
+  const parts = [];
+  if (+s.poolInitial) parts.push(`はじめの額 ${yen(s.poolInitial)}`);
+  parts.push(`毎月の積立 ${yen(ps.deposits)}`);
+  if (s.carryover) parts.push(`予算の余り ${yen(ps.carry)}`);
+  if (ps.out) parts.push(`使った額 ${yen(-ps.out)}`);
+  $('#pool-break').innerHTML = esc(parts.join(' ・ ')) + (s.carryover && st.left > 0 ? `<br><span class="muted">今月の予算が残れば、月末にさらに最大${esc(yen(st.left))}が入ります。</span>` : '');
+
+  const gp = goalPlan();
+  if (!focusIn('#goals')){
+    $('#goals').innerHTML = gp.length ? gp.map((g, i) => {
+      if (view.editGoal === g.id) return `<form class="inline-form goal-edit" data-id="${esc(g.id)}" autocomplete="off">
+        <div class="field full"><label for="ge-name">目標の名前</label><input class="text-in" id="ge-name" value="${esc(g.name)}" maxlength="20"></div>
+        <div class="field"><label for="ge-target">金額</label><div class="yen"><span>¥</span><input id="ge-target" inputmode="numeric" value="${g.target.toLocaleString('ja-JP')}"></div></div>
+        <div class="field"><label for="ge-due">いつまでに</label><input class="text-in" type="month" id="ge-due" value="${esc(g.due || '')}"></div>
+        <div class="acts"><button class="del" type="button" data-gdel>削除</button>${i ? '<button class="btn sm ghost" type="button" data-gup>優先度を上げる</button>' : ''}<button class="btn sm ghost" type="button" data-gcancel>やめる</button><button class="btn sm pool" type="submit">保存</button></div></form>`;
+      const r = g.target ? g.have / g.target : 0;
+      let state, pill = '';
+      if (g.have >= g.target){ state = 'いまのプールで払えます'; pill = '<span class="pill good">準備OK</span>'; }
+      else if (!g.eta) state = '毎月のプール額を設定すると達成時期が出ます';
+      else { state = `このペースだと${mLabel(g.eta)}に貯まります（あと${g.months}か月）`; if (g.due) pill = g.shortfall > 0 ? '<span class="pill warn">間に合わない見込み</span>' : '<span class="pill good">目標月に間に合う</span>'; }
+      const fix = g.shortfall > 0 ? `<div class="small" style="color:var(--warn)">${mLabel(g.due)}までに${yen(g.shortfall)}不足。毎月のプールをあと${yen(g.shortPerMonth)}増やすと間に合います。</div>` : '';
+      return `<div class="goal"><div class="row"><span class="pill mute">${i + 1}</span><b>${esc(g.name)}</b>${pill}<span class="num" style="margin-left:auto">${yen(g.have)} <span class="muted">/ ${yen(g.target)}</span></span></div>
+        <div class="meter thin"><span style="width:${Math.min(100, r * 100)}%"></span></div>
+        <div class="row between small"><span class="muted">${state}${g.due ? ` ・ 目標 ${mLabel(g.due)}` : ''}</span><button class="del" type="button" data-gedit="${esc(g.id)}">編集</button></div>${fix}</div>`;
+    }).join('') + (gp.length > 1 ? '<p class="small muted">番号の順にプールを割り当てます。順番は「編集」から変えられます。</p>' : '')
+    : `<div class="empty">目標はまだありません。「＋ 目標を追加」から、旅行や買い替えなど貯めたいものと金額を入れると、いつ貯まるかがわかります。</div>`;
+  }
+  const done = s.goals.filter(g => g.done);
+  if (done.length && !focusIn('#goals')) $('#goals').insertAdjacentHTML('beforeend', `<p class="small muted">達成済み：${done.map(g => esc(g.name)).join('、')}</p>`);
+
+  const sel = $('#wd-goal'), cv = sel.value;
+  sel.innerHTML = `<option value="">目標なし（その他の大きな出費）</option>` + gp.map(g => `<option value="${esc(g.id)}">${esc(g.name)}</option>`).join('');
+  sel.value = gp.some(g => g.id === cv) ? cv : '';
+  $('#wd-btn').disabled = !(S.loaded && digits($('#wd-amt').value) > 0);
+
+  const mv = S.pool.moves.slice().sort((a, b) => b.ts - a.ts);
+  const rows = mv.map(m => `<div class="item"><span class="dot" style="background:var(--pool)"></span><div class="main"><div><b>${esc(m.memo || '引き出し')}</b>${m.goalName ? ` <span class="pill pl">${esc(m.goalName)}</span>` : ''}</div><div class="small muted">${fmtDate(m.ts)}</div></div><span class="amt minus">${yen(-m.amount)}</span><button class="del" data-wd="${esc(m.id)}" aria-label="この引き出しを削除">削除</button></div>`);
+  const ins = ps.monthly.slice().reverse().slice(0, 12).map(x => `<div class="item"><span class="dot" style="background:var(--good)"></span><div class="main"><div><b>${mLabel(x.k)}の積立</b>${x.carry ? ` <span class="muted small">＋予算の余り ${yen(x.carry)}</span>` : ''}</div><div class="small muted">${x.k === curKey() ? '今月' : '確定'}</div></div><span class="amt plus">+${yen(x.pool + x.carry).slice(1)}</span><span></span></div>`);
+  $('#wd-list').innerHTML = rows.join('') + ins.join('');
+  if (view.tab === 'save' && view.sub.save === 'pool' && $('#chart-fold').open) drawChart(ps, gp);
+}
+
+function drawChart(ps, gp){
+  const box = $('#chart'), W = Math.max(280, box.clientWidth || 600), H = 220;
+  const s = S.settings, N = 12, cur = curKey();
+  const pts = Array.from({ length: N + 1 }, (_, i) => ({ k: addMonth(cur, i), v: ps.bal + s.poolMonthly * i }));
+  const goals = gp.filter(g => g.target > 0);
+  const nice = niceMax(Math.max(1, ...pts.map(p => p.v), ...goals.map(g => g.cum)) * 1.08);
+  const L = 54, R = 10, T = 12, B = 26, iw = W - L - R, ih = H - T - B;
+  const x = i => L + (iw / (N + 1)) * (i + 0.5), bw = Math.max(6, iw / (N + 1) * 0.6);
+  const y = v => T + ih - (Math.max(0, v) / nice) * ih;
+  const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
+  let svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="今後12か月のプール残高の見込み">`;
+  for (let i = 0; i <= 4; i++){
+    const v = nice / 4 * i, yy = y(v);
+    svg += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="${col('--line')}" stroke-width="1"/><text x="${L - 6}" y="${yy + 4}" text-anchor="end" font-size="11" fill="${col('--muted')}" font-family="IBM Plex Mono, monospace">${shortYen(v)}</text>`;
+  }
+  pts.forEach((p, i) => {
+    const h = Math.max(1, T + ih - y(p.v));
+    svg += `<rect x="${x(i) - bw / 2}" y="${T + ih - h}" width="${bw}" height="${h}" rx="3" fill="${col('--pool')}" opacity="${i === 0 ? 1 : 0.45}"/>`;
+    if (i % (W < 420 ? 3 : 2) === 0) svg += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="${col('--muted')}">${i === 0 ? '今' : mShort(p.k)}</text>`;
+  });
+  goals.forEach(g => {
+    const yy = y(g.cum);
+    svg += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="${col('--warn')}" stroke-width="1.5" stroke-dasharray="5 4"/><text x="${W - R - 4}" y="${yy - 5}" text-anchor="end" font-size="11" font-weight="700" fill="${col('--warn')}">${esc(g.name)}</text>`;
+  });
+  box.innerHTML = svg + '</svg>';
+  $('#chart-note').textContent = s.poolMonthly ? `毎月${yen(s.poolMonthly)}ずつ積み立てた場合` : '毎月のプール額が0円です';
+  $('#chart-legend').innerHTML = `<span><i style="background:var(--pool)"></i>プール残高（濃い棒が今）</span>` + (goals.length ? `<span><i style="background:var(--warn)"></i>目標の金額（番号順に必要な累計）</span>` : '');
+}
+function niceMax(v){ const p = Math.pow(10, Math.floor(Math.log10(v))); for (const m of [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (m * p >= v) return m * p; return 10 * p; }
+function shortYen(v){ return v >= 10000 ? (Math.round(v / 1000) / 10).toLocaleString('ja-JP') + '万' : Math.round(v).toLocaleString('ja-JP'); }
+
+function renderOthers(){
+  const ppl = S.others.people.map(p => ({ ...p, bal: personBalance(p.id), moves: S.others.moves.filter(m => m.pid === p.id).sort((a, b) => b.ts - a.ts) }));
+  const inSum = ppl.reduce((a, p) => a + Math.max(0, p.bal), 0), outSum = ppl.reduce((a, p) => a + Math.max(0, -p.bal), 0);
+  $('#o-in').textContent = yen(inSum); $('#o-out').textContent = yen(outSum);
+  $('#o-people').innerHTML = S.others.people.map(p => `<option value="${esc(p.name)}"></option>`).join('');
+  const sc = $('#o-share-cat'), cv = sc.value;
+  sc.innerHTML = S.settings.categories.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+  if (catById(cv)) sc.value = cv; else { const c = S.settings.categories.find(c => /交際/.test(c.name)) || S.settings.categories[0]; if (c) sc.value = c.id; }
+  updateOBtn();
+  ppl.sort((a, b) => (b.bal !== 0) - (a.bal !== 0) || Math.abs(b.bal) - Math.abs(a.bal) || ((b.moves[0] || {}).ts || 0) - ((a.moves[0] || {}).ts || 0));
+  $('#people').innerHTML = ppl.length ? ppl.map(p => {
+    const st = p.bal > 0 ? `<span class="pill good">返ってくる</span>` : p.bal < 0 ? `<span class="pill bad">返す・渡す</span>` : `<span class="pill mute">精算済み</span>`;
+    const mv = p.moves.slice(0, 5).map(m => `<div class="item"><span class="dot" style="background:${KIND[m.kind][1] > 0 ? 'var(--good)' : 'var(--bad)'}"></span><div class="main"><div><b>${KIND[m.kind][0]}</b>${m.memo ? ` <span class="muted small">${esc(m.memo)}</span>` : ''}</div><div class="small muted">${fmtDate(m.ts)}</div></div><span class="amt">${yen(m.amount)}</span><button class="del" data-omv="${esc(m.id)}" aria-label="この記録を削除">削除</button></div>`).join('');
+    return `<div class="person"><div class="row"><b style="font-size:16px">${esc(p.name)}</b>${st}<span class="pbal ${p.bal > 0 ? 'plus' : p.bal < 0 ? 'minus' : 'muted'}">${p.bal ? yen(Math.abs(p.bal)) : '¥0'}</span></div>
+      <div class="small muted">${p.bal > 0 ? `${esc(p.name)}から${yen(p.bal)}受け取る予定` : p.bal < 0 ? `${esc(p.name)}に${yen(-p.bal)}返す・渡す予定` : '貸し借りはありません'}</div>
+      <div class="list">${mv}</div>
+      <div class="row" style="justify-content:flex-end">${p.bal ? `<button class="btn sm ghost" type="button" data-settle="${esc(p.id)}">${p.bal > 0 ? '全額返してもらった' : '全額返した'}</button>` : `<button class="del" type="button" data-pdel="${esc(p.id)}">この人を一覧から消す</button>`}</div></div>`;
+  }).join('') : '<div class="empty">まだ記録がありません。飲み会の立て替えや、家族から預かったお金などを記録すると、相手ごとの残りがここに出ます。</div>';
+}
+function todayISO(){ const d = now(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function isoLabel(iso){ const [y, m, d] = iso.split('-').map(Number); const dt = new Date(y, m - 1, d); return `${y !== now().getFullYear() ? y + '/' : ''}${m}/${d}(${WD[dt.getDay()]})`; }
+function walletState(w){
+  const mv = S.others.wmoves.filter(m => m.wid === w.id).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.ts - b.ts);
+  let bal = 0, inSum = 0, useSum = 0;
+  const rows = mv.map(m => { if (m.type === 'in'){ bal += m.amount; inSum += m.amount; } else { bal -= m.amount; useSum += m.amount; } return { ...m, bal }; });
+  return { rows, bal, inSum, useSum };
+}
+function renderGifts(){
+  const ws = S.others.wallets;
+  if (view.wallet && !ws.some(w => w.id === view.wallet)) view.wallet = null;
+  if (!view.wallet && ws.length) view.wallet = ws[ws.length - 1].id;
+  $('#wallets').innerHTML = ws.map(w => { const st = walletState(w); return `<button type="button" class="wallet" data-wallet="${esc(w.id)}" aria-pressed="${view.wallet === w.id}"><b>${esc(w.name)}</b><span class="num ${st.bal < 0 ? 'minus' : ''}">${yen(st.bal)}</span><span class="small muted">残り</span></button>`; }).join('')
+    + `<button type="button" class="wallet add" id="w-open">＋ もらったお金を追加</button>`;
+  if (focusIn('#wallet-detail')) return;
+  const w = ws.find(x => x.id === view.wallet);
+  if (!w){ $('#wallet-detail').innerHTML = ws.length ? '' : '<div class="empty">まだありません。「＋ もらったお金を追加」から、もらった金額を入れて始めましょう。</div>'; return; }
+  const st = walletState(w);
+  const rows = st.rows.slice().reverse().map(m => `<div class="item"><span class="dot" style="background:${m.type === 'in' ? 'var(--good)' : 'var(--k3)'}"></span><div class="main"><div>${m.type === 'in' ? '<span class="pill good">もらった</span> ' : ''}<b>${esc(m.memo || (m.type === 'in' ? '' : '（用途なし）'))}</b></div><div class="small muted">${isoLabel(m.date)}</div></div><span class="amt" style="text-align:right">${m.type === 'in' ? `<span class="plus">+${yen(m.amount).slice(1)}</span>` : yen(-m.amount)}<span class="small muted" style="display:block;font-weight:400">残り ${yen(m.bal)}</span></span><button class="del" data-wmv="${esc(m.id)}" aria-label="この行を削除">削除</button></div>`).join('');
+  $('#wallet-detail').innerHTML = `
+    <div class="card stack">
+      <div class="row between"><h2>${esc(w.name)}</h2><span class="small muted">もらった ${yen(st.inSum)} ・ 使った ${yen(st.useSum)}</span></div>
+      <div><div class="label">残り</div><div class="big ${st.bal < 0 ? 'neg' : ''}">${yen(st.bal)}</div></div>
+      <div class="meter thin" aria-hidden="true"><span style="width:${st.inSum ? Math.min(100, st.useSum / st.inSum * 100) : 0}%"></span></div>
+    </div>
+    <form class="card stack" id="wf" autocomplete="off">
+      <div class="seg" id="wf-type" role="group" aria-label="種類">
+        <button type="button" data-t="use" aria-pressed="${view.wtype === 'use'}"><b>使った</b><span>金額と用途を記録</span></button>
+        <button type="button" data-t="in" aria-pressed="${view.wtype === 'in'}"><b>追加でもらった</b><span>同じお金をまたもらった</span></button>
+      </div>
+      <div class="grid2">
+        <div class="field"><label for="wf-amt">金額</label><div class="yen"><span>¥</span><input id="wf-amt" inputmode="numeric" placeholder="0"></div></div>
+        <div class="field"><label for="wf-date">日付</label><input class="text-in" type="date" id="wf-date" value="${todayISO()}"></div>
+      </div>
+      <div class="field"><label for="wf-memo">${view.wtype === 'use' ? '用途' : 'メモ（任意）'}</label><input class="text-in" id="wf-memo" maxlength="40" placeholder="${view.wtype === 'use' ? '例：教科書代、ベビー服、合宿のバス代' : '例：12月分'}"></div>
+      <button class="btn wide" type="submit">${view.wtype === 'use' ? '使った分を記録' : 'もらった分を記録'}</button>
+    </form>
+    <div class="card stack">
+      <div class="row between"><h2>使い道の一覧</h2><span class="small muted">新しい日付が上</span></div>
+      ${rows ? `<div class="list">${rows}</div>` : '<div class="empty">まだ記録がありません。</div>'}
+    </div>
+    <details class="card fold"><summary><h2>このお金の設定</h2></summary>
+      <div class="fold-body row"><input class="text-in" id="wf-name" value="${esc(w.name)}" maxlength="24" style="flex:1 1 12em" aria-label="名前"><button class="btn sm ghost" type="button" id="wf-rename">名前を変える</button><button class="del" type="button" id="wf-del">このお金と記録を削除</button></div>
+    </details>`;
+}
+function updateOBtn(){ $('#o-btn').disabled = !(S.loaded && $('#o-who').value.trim() && digits($('#o-amt').value) > 0); }
+
+function renderSet(){
+  const s = S.settings;
+  for (const el of $$('#p-set .yen input[data-k]')) el.value = (+s[el.dataset.k] || 0).toLocaleString('ja-JP');
+  $('#s-carry').checked = !!s.carryover;
+  $('#cat-edit').innerHTML = s.categories.map(c => `<div class="catrow" data-id="${esc(c.id)}">
+    <button type="button" class="dot" data-color aria-label="${esc(c.name)}の色を変える" style="background:${kc(c)};border:0;padding:0;width:16px;height:16px"></button>
+    <input class="text-in cn" data-f="name" value="${esc(c.name)}" maxlength="12" aria-label="ジャンル名">
+    <select class="text-in ct" data-f="type" aria-label="${esc(c.name)}の種類"><option value="monthly"${isFund(c) ? '' : ' selected'}>毎月</option><option value="sinking"${isFund(c) ? ' selected' : ''}>特別費（積立）</option></select>
+    <div class="yen cb"><span>¥</span><input data-f="budget" inputmode="numeric" value="${(+c.budget || 0).toLocaleString('ja-JP')}" aria-label="${esc(c.name)}の${isFund(c) ? '毎月の積立額' : '月予算'}"></div>
+    <button type="button" class="del cd" data-catdel aria-label="${esc(c.name)}を削除">削除</button>
+    ${isFund(c) ? `<div class="sub"><span>すでに取り分けてある額</span><div class="yen"><span>¥</span><input data-f="init" inputmode="numeric" value="${(+c.init || 0).toLocaleString('ja-JP')}" aria-label="${esc(c.name)}の開始時の残高"></div><span>年間 約${esc(yen((+c.budget || 0) * 12))}</span></div>` : ''}
+  </div>`).join('');
+  renderAlloc();
+}
+function renderAlloc(){
+  const s = S.settings, mb = sumBudget(monthlyCats()), fb = sumBudget(fundCats()), inc = +s.income || 0;
+  $('#cat-total').textContent = `毎月 ${yen(mb)} ・ 積立 ${yen(fb)}`;
+  const parts = [['固定費', +s.fixed || 0, 'var(--k8)'], ['毎月の予算', mb, 'var(--accent)'], ['特別費の積立', fb, 'var(--fund)'], ['プール', +s.poolMonthly || 0, 'var(--pool)']];
+  const used = parts.reduce((a, p) => a + p[1], 0), base = Math.max(inc, used, 1);
+  $('#alloc').innerHTML = parts.map(p => `<span style="width:${p[1] / base * 100}%;background:${p[2]}"></span>`).join('');
+  $('#alloc-legend').innerHTML = parts.map(p => `<span><i style="background:${p[2]}"></i>${p[0]} ${yen(p[1])}</span>`).join('') + (inc > used ? `<span><i style="background:var(--sunk);outline:1px solid var(--line)"></i>未割り当て ${yen(inc - used)}</span>` : '');
+  const n = $('#alloc-note');
+  if (!inc) n.innerHTML = '<span class="muted">手取り月収を入れると、予算・積立・プールが収入内に収まっているか確認できます。</span>';
+  else if (used > inc) n.innerHTML = `<span class="minus">収入より${esc(yen(used - inc))}多く割り振っています。予算か積立かプール額を減らしましょう。</span>`;
+  else if (inc > used) n.innerHTML = `<span class="muted">${esc(yen(inc - used))}が未割り当てです。プールに足すと目標が早く貯まります。</span>`;
+  else n.innerHTML = '<span class="plus">収入をぴったり割り振れています。</span>';
+}
+
+/* ---------- actions ---------- */
+let toastTimer;
+function toast(msg, undo){
+  const t = $('#toast'); t.innerHTML = `<span>${esc(msg)}</span>`;
+  if (undo){ const b = document.createElement('button'); b.textContent = '取り消す'; b.onclick = () => { undo(); t.hidden = true; }; t.appendChild(b); }
+  t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 4500);
+}
+function setTab(tab){
+  view.tab = tab;
+  for (const b of $$('nav.tabs button')) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
+  $('#gear').setAttribute('aria-pressed', String(tab === 'set'));
+  for (const p of ['rec', 'ana', 'save', 'oth', 'set']) $('#p-' + p).hidden = p !== tab;
+  if (tab === 'save') renderPool();
+  if (tab === 'set') renderSet();
+  window.scrollTo({ top: 0 });
+}
+document.querySelector('nav.tabs').addEventListener('click', e => { const b = e.target.closest('button[data-tab]'); if (b) setTab(b.dataset.tab); });
+$('#gear').onclick = () => setTab(view.tab === 'set' ? 'rec' : 'set');
+$('#go-set').onclick = () => setTab('set');
+$('#fund-set').onclick = () => { setTab('set'); setSub('set', 'cats'); };
+function setSub(group, sub){
+  view.sub[group] = sub;
+  for (const b of $$(`.subtabs[data-group="${group}"] button`)) b.setAttribute('aria-selected', String(b.dataset.sub === sub));
+  for (const el of $$(`[data-pane^="${group}:"]`)) el.hidden = el.dataset.pane !== group + ':' + sub;
+  if (group === 'save' && sub === 'pool') renderPool();
+}
+document.addEventListener('click', e => { const b = e.target.closest('.subtabs button[data-sub]'); if (b) setSub(b.closest('.subtabs').dataset.group, b.dataset.sub); });
+$('#see-all').onclick = () => { view.month = curKey(); renderAna(); setTab('ana'); $('#month-fold').open = true; setTimeout(() => $('#month-fold').scrollIntoView({ block: 'start' }), 30); };
+$('#chart-fold').addEventListener('toggle', () => { if ($('#chart-fold').open) renderPool(); });
+$('#wd-open').onclick = () => { $('#wd-form').hidden = false; $('#wd-open').hidden = true; $('#wd-amt').focus(); };
+$('#wd-cancel').onclick = () => { $('#wd-form').hidden = true; $('#wd-open').hidden = false; };
+
+
+$('#chips').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  view.cat = b.dataset.cat;
+  for (const c of $$('.chip')) c.setAttribute('aria-pressed', String(c === b));
+  updateRecBtn(); $('#amt').focus();
+});
+function fmtInput(el){ const raw = String(el.value).replace(/[^\d]/g, ''); el.value = raw === '' ? '' : Number(raw).toLocaleString('ja-JP'); }
+$('#amt').addEventListener('input', e => { fmtInput(e.target); updateRecBtn(); });
+function addEntry(c, amount, memo){
+  const ts = Date.now(), k = mkey(new Date(ts));
+  const entry = { id: uid(), cat: c.id, catName: c.name, fund: isFund(c), amount, memo, ts };
+  if (!S.months[k]) S.months[k] = { entries: [] };
+  S.months[k].entries.push(entry);
+  const wasNew = S.isNew;
+  save('m-' + k); if (wasNew) save('settings');
+  return { k, entry };
+}
+$('#rec-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const amount = digits($('#amt').value); if (!view.cat || !amount || !S.loaded) return;
+  const c = catById(view.cat);
+  const { k, entry } = addEntry(c, amount, $('#memo').value.trim());
+  $('#amt').value = ''; $('#memo').value = '';
+  renderData();
+  const left = isFund(c) ? fundState(c).bal : (+c.budget || 0) - (monthStats(k).spentMap[c.id] || 0);
+  toast(`${c.name} ${yen(amount)} を記録しました（${fmtDate(entry.ts, false)}）・${isFund(c) ? '積立残高' : '残り'}${yen(left)}`, () => removeEntry(k, entry.id));
+});
+function removeEntry(k, id){
+  if (!S.months[k]) return;
+  S.months[k].entries = S.months[k].entries.filter(e => e.id !== id);
+  save('m-' + k); renderData();
+}
+function armed(b){
+  if (b.classList.contains('arm')) return true;
+  const t = b.textContent; b.classList.add('arm'); b.textContent = '削除する';
+  setTimeout(() => { if (b.isConnected){ b.classList.remove('arm'); b.textContent = t; } }, 3000);
+  return false;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.del[data-del], .del[data-wd], .del[data-omv], .del[data-pdel]'); if (!b) return;
+  if (!armed(b)) return;
+  if (b.dataset.del) removeEntry(b.dataset.m, b.dataset.del);
+  else if (b.dataset.wd){ S.pool.moves = S.pool.moves.filter(m => m.id !== b.dataset.wd); save('pool'); renderData(); }
+  else if (b.dataset.omv){ S.others.moves = S.others.moves.filter(m => m.id !== b.dataset.omv); save('others'); renderOthers(); }
+  else if (b.dataset.pdel){ S.others.people = S.others.people.filter(p => p.id !== b.dataset.pdel); S.others.moves = S.others.moves.filter(m => m.pid !== b.dataset.pdel); save('others'); renderOthers(); }
+});
+$('#m-prev').onclick = () => { view.month = addMonth(view.month, -1); renderAna(); };
+$('#m-next').onclick = () => { if (view.month < curKey()){ view.month = addMonth(view.month, 1); renderAna(); } };
+
+/* プール：目標の追加・編集 */
+$('#goal-open').onclick = () => { $('#goal-form').hidden = false; $('#g-name').focus(); };
+$('#goal-cancel').onclick = () => { $('#goal-form').hidden = true; };
+$('#g-target').addEventListener('input', e => fmtInput(e.target));
+$('#goal-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('#g-name').value.trim(), target = digits($('#g-target').value), due = $('#g-due').value;
+  if (!name){ toast('目標の名前を入れてください'); $('#g-name').focus(); return; }
+  if (!target){ toast('目標の金額を入れてください'); $('#g-target').focus(); return; }
+  S.settings.goals.push({ id: 'g' + uid(), name, target, due: due || '' });
+  save('settings');
+  $('#g-name').value = ''; $('#g-target').value = ''; $('#g-due').value = ''; $('#goal-form').hidden = true;
+  document.activeElement && document.activeElement.blur();
+  renderData();
+  const g = goalPlan().find(x => x.name === name);
+  toast(`目標「${name}」を追加しました${g ? (g.months === 0 ? '。いまのプールで足ります' : g.eta ? `。${mLabel(g.eta)}に貯まる見込みです` : '') : ''}`);
+});
+$('#goals').addEventListener('click', e => {
+  const s = S.settings;
+  const ed = e.target.closest('[data-gedit]');
+  if (ed){ view.editGoal = ed.dataset.gedit; renderPool(); const f = $('#ge-name'); if (f) f.focus(); return; }
+  const form = e.target.closest('.goal-edit'); if (!form) return;
+  const id = form.dataset.id;
+  if (e.target.closest('[data-gcancel]')){ view.editGoal = null; document.activeElement.blur(); renderPool(); }
+  else if (e.target.closest('[data-gdel]')){
+    const b = e.target.closest('[data-gdel]'); if (!armed(b)) return;
+    s.goals = s.goals.filter(g => g.id !== id); view.editGoal = null; save('settings'); document.activeElement.blur(); renderData();
+  }
+  else if (e.target.closest('[data-gup]')){
+    const act = s.goals.filter(g => !g.done), i = act.findIndex(g => g.id === id);
+    if (i > 0){ const a = s.goals.indexOf(act[i - 1]), b = s.goals.indexOf(act[i]); [s.goals[a], s.goals[b]] = [s.goals[b], s.goals[a]]; save('settings'); }
+    document.activeElement.blur(); renderData(); const f = $('#ge-name'); if (f) f.focus();
+  }
+});
+$('#goals').addEventListener('input', e => { if (e.target.id === 'ge-target') fmtInput(e.target); });
+$('#goals').addEventListener('submit', e => {
+  e.preventDefault();
+  const form = e.target.closest('.goal-edit'); const g = S.settings.goals.find(x => x.id === form.dataset.id); if (!g) return;
+  const name = $('#ge-name').value.trim(), target = digits($('#ge-target').value);
+  if (!name || !target){ toast('名前と金額を入れてください'); return; }
+  g.name = name; g.target = target; g.due = $('#ge-due').value || '';
+  view.editGoal = null; save('settings'); document.activeElement.blur(); renderData();
+  toast('目標を保存しました');
+});
+
+$('#wd-amt').addEventListener('input', e => { fmtInput(e.target); $('#wd-btn').disabled = !(S.loaded && digits(e.target.value) > 0); });
+$('#wd-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const amount = digits($('#wd-amt').value); if (!amount || !S.loaded) return;
+  const gid = $('#wd-goal').value, g = S.settings.goals.find(x => x.id === gid);
+  S.pool.moves.push({ id: uid(), amount, memo: $('#wd-memo').value.trim(), goalId: gid || null, goalName: g ? g.name : null, ts: Date.now() });
+  save('pool');
+  if (g && amount >= (+g.target || 0) * 0.8){ g.done = true; save('settings'); }
+  $('#wd-amt').value = ''; $('#wd-memo').value = ''; $('#wd-form').hidden = true; $('#wd-open').hidden = false;
+  renderData();
+  toast(`プールから${yen(amount)}を使いました${g && g.done ? `。「${g.name}」を達成済みにしました` : ''}`);
+});
+
+/* 人のお金 */
+$('#o-kind').addEventListener('click', e => {
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  view.okind = b.dataset.k;
+  for (const x of $$('#o-kind button')) x.setAttribute('aria-pressed', String(x === b));
+  $('#o-share-box').hidden = view.okind !== 'lend';
+});
+$('#o-who').addEventListener('input', updateOBtn);
+$('#o-amt').addEventListener('input', e => { fmtInput(e.target); updateOBtn(); });
+$('#o-share-amt').addEventListener('input', e => fmtInput(e.target));
+$('#o-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('#o-who').value.trim(), amount = digits($('#o-amt').value); if (!name || !amount || !S.loaded) return;
+  let p = S.others.people.find(x => x.name === name);
+  if (!p){ p = { id: 'p' + uid(), name }; S.others.people.push(p); }
+  S.others.moves.push({ id: uid(), pid: p.id, kind: view.okind, amount, memo: $('#o-memo').value.trim(), ts: Date.now() });
+  save('others');
+  let extra = '';
+  const share = digits($('#o-share-amt').value);
+  if (view.okind === 'lend' && $('#o-share-box').open && share > 0){
+    const c = catById($('#o-share-cat').value);
+    if (c){ addEntry(c, share, ($('#o-memo').value.trim() || name + 'と') + '（自分の分）'); extra = `。自分の分${yen(share)}を${c.name}に記録しました`; }
+  }
+  $('#o-amt').value = ''; $('#o-memo').value = ''; $('#o-share-amt').value = '';
+  renderData();
+  const bal = personBalance(p.id);
+  toast(`${name}：${KIND[view.okind][0]} ${yen(amount)}${extra}`);
+});
+$('#people').addEventListener('click', e => {
+  const b = e.target.closest('[data-settle]'); if (!b) return;
+  if (!b.classList.contains('arm')){ const t = b.textContent; b.classList.add('arm'); b.textContent = 'もう一度押すと精算'; setTimeout(() => { if (b.isConnected){ b.classList.remove('arm'); b.textContent = t; } }, 3000); return; }
+  const pid = b.dataset.settle, bal = personBalance(pid);
+  if (!bal) return;
+  S.others.moves.push({ id: uid(), pid, kind: bal > 0 ? 'back' : 'repay', amount: Math.abs(bal), memo: '精算', ts: Date.now() });
+  save('others'); renderOthers(); toast('精算しました');
+});
+
+/* 設定：入力するとすぐ反映・自動保存 */
+let setTimer, savedTimer;
+function settingsChanged(structural){
+  editingSettings = false;
+  recordHistory(); save('settings'); renderData();
+  if (structural) renderSet(); else renderAlloc();
+  const sv = $('#saved'); sv.classList.add('on'); clearTimeout(savedTimer); savedTimer = setTimeout(() => sv.classList.remove('on'), 1800);
+}
+function scheduleSettings(){ editingSettings = true; renderAlloc(); renderData(); clearTimeout(setTimer); setTimer = setTimeout(() => settingsChanged(false), 600); }
+$('#p-set').addEventListener('input', e => {
+  const el = e.target, s = S.settings;
+  if (el.closest('.yen')) fmtInput(el);
+  if (el.dataset.k){ s[el.dataset.k] = digits(el.value); scheduleSettings(); return; }
+  const cr = el.closest('.catrow');
+  if (cr){
+    const c = catById(cr.dataset.id); if (!c) return;
+    if (el.dataset.f === 'name') c.name = el.value;
+    else if (el.dataset.f === 'budget') c.budget = digits(el.value);
+    else if (el.dataset.f === 'init') c.init = digits(el.value);
+    else if (el.dataset.f === 'type') return; // change で処理
+    scheduleSettings();
+  }
+});
+$('#p-set').addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 's-carry'){ S.settings.carryover = el.checked; clearTimeout(setTimer); settingsChanged(false); return; }
+  const cr = el.closest('.catrow');
+  if (cr && el.dataset.f === 'type'){ catById(cr.dataset.id).type = el.value; clearTimeout(setTimer); settingsChanged(true); return; }
+  if (cr && el.dataset.f === 'name' && !el.value.trim()){ const c = catById(cr.dataset.id); c.name = 'ジャンル'; el.value = c.name; }
+  clearTimeout(setTimer); settingsChanged(false);
+});
+$('#p-set').addEventListener('click', e => {
+  const s = S.settings, cr = e.target.closest('.catrow'); if (!cr) return;
+  if (e.target.closest('[data-color]')){ const c = catById(cr.dataset.id); c.color = ((c.color || 0) + 1) % COLORS; settingsChanged(true); }
+  const b = e.target.closest('[data-catdel]');
+  if (b){
+    if (s.categories.length <= 1){ toast('ジャンルは1つ以上必要です'); return; }
+    if (!armed(b)) return;
+    s.categories = s.categories.filter(c => c.id !== cr.dataset.id); settingsChanged(true);
+  }
+});
+$('#cat-add').onclick = () => {
+  const s = S.settings, used = new Set(s.categories.map(c => c.color));
+  let color = 0; while (used.has(color) && color < COLORS - 1) color++;
+  s.categories.push({ id: 'c' + uid(), name: '新しいジャンル', budget: 5000, type: 'monthly', init: 0, color });
+  settingsChanged(true);
+  const rows = $$('#cat-edit .catrow input[data-f="name"]'); const last = rows[rows.length - 1]; if (last){ last.focus(); last.select(); }
+};
+
+/* もらったお金 */
+$('#wallets').addEventListener('click', e => {
+  const b = e.target.closest('[data-wallet]');
+  if (b){ view.wallet = b.dataset.wallet; document.activeElement && document.activeElement.blur(); renderGifts(); return; }
+  if (e.target.closest('#w-open')){ $('#w-new').hidden = false; $('#w-date').value = todayISO(); $('#w-name').focus(); }
+});
+$('#w-cancel').onclick = () => { $('#w-new').hidden = true; };
+$('#w-amt').addEventListener('input', e => fmtInput(e.target));
+$('#w-new').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('#w-name').value.trim(), amount = digits($('#w-amt').value), date = $('#w-date').value || todayISO();
+  if (!name){ toast('何のお金か名前を入れてください'); $('#w-name').focus(); return; }
+  const w = { id: 'w' + uid(), name, ts: Date.now() };
+  S.others.wallets.push(w);
+  if (amount) S.others.wmoves.push({ id: uid(), wid: w.id, type: 'in', amount, memo: '', date, ts: Date.now() });
+  save('others');
+  $('#w-name').value = ''; $('#w-amt').value = ''; $('#w-new').hidden = true; view.wallet = w.id; view.wtype = 'use';
+  document.activeElement && document.activeElement.blur();
+  renderGifts(); toast(`「${name}」を追加しました`);
+});
+$('#wallet-detail').addEventListener('click', e => {
+  const t = e.target.closest('#wf-type button[data-t]');
+  if (t){ view.wtype = t.dataset.t; const keep = { a: $('#wf-amt').value, d: $('#wf-date').value }; document.activeElement.blur(); renderGifts(); $('#wf-amt').value = keep.a; $('#wf-date').value = keep.d; return; }
+  const d = e.target.closest('[data-wmv]');
+  if (d){ if (!armed(d)) return; S.others.wmoves = S.others.wmoves.filter(m => m.id !== d.dataset.wmv); save('others'); document.activeElement.blur(); renderGifts(); return; }
+  if (e.target.closest('#wf-rename')){ const w = S.others.wallets.find(x => x.id === view.wallet), n = $('#wf-name').value.trim(); if (w && n){ w.name = n; save('others'); document.activeElement.blur(); renderGifts(); toast('名前を変えました'); } return; }
+  const del = e.target.closest('#wf-del');
+  if (del){ if (!armed(del)) return; S.others.wmoves = S.others.wmoves.filter(m => m.wid !== view.wallet); S.others.wallets = S.others.wallets.filter(w => w.id !== view.wallet); view.wallet = null; save('others'); document.activeElement.blur(); renderGifts(); }
+});
+$('#wallet-detail').addEventListener('input', e => { if (e.target.id === 'wf-amt') fmtInput(e.target); });
+$('#wallet-detail').addEventListener('submit', e => {
+  e.preventDefault();
+  const amount = digits($('#wf-amt').value), memo = $('#wf-memo').value.trim(), date = $('#wf-date').value || todayISO();
+  if (!amount){ toast('金額を入れてください'); $('#wf-amt').focus(); return; }
+  if (view.wtype === 'use' && !memo){ toast('何に使ったか（用途）を入れてください'); $('#wf-memo').focus(); return; }
+  S.others.wmoves.push({ id: uid(), wid: view.wallet, type: view.wtype, amount, memo, date, ts: Date.now() });
+  save('others');
+  document.activeElement && document.activeElement.blur();
+  renderGifts();
+  const w = S.others.wallets.find(x => x.id === view.wallet);
+  toast(`${isoLabel(date)} ${view.wtype === 'use' ? memo + ' ' + yen(amount) : 'もらった ' + yen(amount)} を記録・残り${yen(walletState(w).bal)}`);
+});
+
+/* バックアップ */
+const BKKEY = 'maitsuki-kakeibo-lastbackup';
+function lastBackup(){ try { return +localStorage.getItem(BKKEY) || 0; } catch (e) { return 0; } }
+function entryCount(){ let n = 0; for (const k in S.months) n += entries(k).length; return n; }
+function renderBackup(){
+  const lb = lastBackup();
+  $('#bk-last').innerHTML = lb ? `この端末での最後の書き出し：<b>${new Date(lb).toLocaleDateString('ja-JP')}</b>` : '<span class="muted">この端末ではまだ書き出していません。</span>';
+  const can = STANDALONE || !!DL;
+  $('#bk-btns').hidden = !can; $('#bk-na').hidden = can || !S.loaded;
+  const days = lb ? Math.floor((Date.now() - lb) / 86400000) : null;
+  const show = STANDALONE && S.loaded && entryCount() >= 10 && (days === null || days >= 30);
+  $('#bk-remind').hidden = !show;
+  if (show) $('#bk-remind-t').textContent = days === null ? 'バックアップをとりましょう' : `最後のバックアップから${days}日たちました`;
+}
+function stamp(){ const d = now(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`; }
+async function saveFile(filename, text, mime){
+  if (!STANDALONE){
+    if (!DL) throw { code: 'unavailable' };
+    await DL.save({ filename, data: text });
+    return;
+  }
+  const blob = new Blob([text], { type: mime });
+  const file = typeof File === 'function' ? new File([blob], filename, { type: mime }) : null;
+  if (file && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && navigator.canShare && navigator.canShare({ files: [file] })){
+    await navigator.share({ files: [file], title: filename });
+    return;
+  }
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+function exportJSON(){
+  return JSON.stringify({ app: 'maitsuki-kakeibo', version: 1, exportedAt: new Date().toISOString(), settings: S.settings, months: S.months, pool: S.pool, others: S.others }, null, 1);
+}
+function exportCSV(){
+  const q = v => { const t = String(v ?? ''); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const lines = [['日付', '時刻', 'ジャンル', '種類', '金額', 'メモ'].join(',')];
+  const all = []; for (const k in S.months) all.push(...entries(k));
+  all.sort((a, b) => a.ts - b.ts);
+  for (const e of all){ const d = new Date(e.ts); lines.push([`${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`, `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`, catName(e), entryIsFund(e) ? '特別費' : '毎月', e.amount, e.memo || ''].map(q).join(',')); }
+  return '﻿' + lines.join('\r\n');
+}
+async function doExport(kind){
+  try {
+    if (kind === 'json') await saveFile(`kakeibo-backup-${stamp()}.json`, exportJSON(), 'application/json');
+    else await saveFile(`kakeibo-${stamp()}.csv`, exportCSV(), 'text/csv');
+    if (kind === 'json'){ try { localStorage.setItem(BKKEY, String(Date.now())); } catch (e) {} }
+    renderBackup();
+    toast(kind === 'json' ? 'バックアップを書き出しました' : 'CSVを書き出しました');
+  } catch (err){
+    if (err && (err.name === 'AbortError' || err.code === 'cancelled' || err.code === 'declined')) return;
+    toast(err && err.code === 'unavailable' ? 'この表示ではファイルを書き出せません' : '書き出せませんでした。もう一度お試しください。');
+  }
+}
+$('#bk-json').onclick = () => doExport('json');
+$('#bk-csv').onclick = () => doExport('csv');
+$('#bk-remind-go').onclick = () => { setTab('set'); setSub('set', 'backup'); };
+let pendingImport = null;
+$('#bk-file').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; const box = $('#bk-preview');
+  pendingImport = null; box.hidden = true; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!d || d.app !== 'maitsuki-kakeibo' || !d.settings) throw new Error('format');
+    let n = 0, total = 0; for (const k in (d.months || {})) for (const x of (d.months[k].entries || [])){ n++; total += x.amount || 0; }
+    pendingImport = d;
+    box.hidden = false;
+    box.innerHTML = `<div class="empty" style="text-align:left">${esc(new Date(d.exportedAt).toLocaleString('ja-JP'))} に書き出したファイルです。<br>支出 ${n}件（合計 ${esc(yen(total))}）・ジャンル ${(d.settings.categories || []).length}個・目標 ${(d.settings.goals || []).length}個・もらったお金 ${((d.others && d.others.wallets) || []).length}件</div>
+      <div class="row"><button class="btn sm" type="button" id="bk-apply">いまのデータと置き換えて読み込む</button><button class="btn sm ghost" type="button" id="bk-cancel">やめる</button></div>`;
+  } catch (err){
+    box.hidden = false; box.innerHTML = '<p class="small minus">このファイルは読み込めません。この家計簿で書き出したバックアップ（.json）を選んでください。</p>';
+  }
+});
+$('#bk-preview').addEventListener('click', e => {
+  if (e.target.closest('#bk-cancel')){ pendingImport = null; $('#bk-preview').hidden = true; $('#bk-file').value = ''; return; }
+  if (!e.target.closest('#bk-apply') || !pendingImport) return;
+  const d = pendingImport;
+  const oldMonths = Object.keys(S.months);
+  S.settings = normalize(d.settings); S.months = {};
+  for (const k in (d.months || {})) S.months[k] = { entries: Array.isArray(d.months[k].entries) ? d.months[k].entries : [] };
+  for (const k of oldMonths) if (!S.months[k]) S.months[k] = { entries: [] };
+  S.pool = normPool(d.pool); S.others = normOthers(d.others);
+  save('settings'); save('pool'); save('others');
+  for (const k in S.months) save('m-' + k);
+  pendingImport = null; $('#bk-preview').hidden = true; $('#bk-file').value = '';
+  view.month = curKey(); renderAll();
+  toast('バックアップを読み込みました');
+});
+
+/* AI */
+$('#ai-btn').onclick = async () => {
+  const ai = window.__ai; if (!ai) return;
+  const out = $('#ai-out'), btn = $('#ai-btn');
+  out.hidden = false; out.textContent = '考えています…'; btn.disabled = true;
+  const k = curKey(), st = monthStats(k), s = S.settings;
+  const data = {
+    今日: `${now().getMonth() + 1}月${now().getDate()}日`, 月の日数: st.days, 経過日数: st.day,
+    手取り月収: s.income || '未設定', 固定費: s.fixed, 毎月のプール額: s.poolMonthly, プール残高: Math.round(poolState().bal),
+    毎月の予算: monthlyCats().map(c => ({ 名前: c.name, 月予算: +c.budget || 0, 今月の支出: st.spentMap[c.id] || 0 })),
+    特別費の積立: fundCats().map(c => { const f = fundState(c); return { 名前: c.name, 毎月の積立: +c.budget || 0, 残高: f.bal, 今年の支出: f.yearSpent }; }),
+    今月の記録: entries(k).slice(-80).map(e => ({ 日: new Date(e.ts).getDate(), ジャンル: catName(e), 金額: e.amount, メモ: e.memo || '' })),
+    先月のジャンル別支出: Object.fromEntries(Object.entries(spentBy(addMonth(k, -1)).m).map(([id, v]) => [catById(id) ? catById(id).name : 'その他', v])),
+    目標: goalPlan().map(g => ({ 名前: g.name, 金額: g.target, 目標月: g.due || 'なし', 不足見込み: g.shortfall })),
+  };
+  const prompt = `あなたは家計の相談に乗るファイナンシャルプランナーです。以下は利用者の家計簿データ(JSON)です。「毎月の予算」は月ごとに使い切る費目、「特別費の積立」は毎月取り分けて不定期に使う費目、「プール」は旅行や大きな買い物のための貯金です。\n` +
+    `このデータだけを根拠に、日本語で節約アドバイスを3〜4個、箇条書き（行頭は「・」）で書いてください。` +
+    `各項目は2文以内で、どのジャンルをいくら・どう減らすと月いくら浮くかを具体的な金額で示してください。` +
+    `プールの目標に触れられる場合は、その節約で目標が何か月早まるかも書いてください。前置きや締めの挨拶、見出し、マークダウン記法は不要です。\n\n` + JSON.stringify(data);
+  try { await ai(prompt, { onText: ({ text }) => { out.textContent = text; } }); }
+  catch (err){
+    if (err && err.code === 'not_granted') $('#ai-box').hidden = true;
+    else out.textContent = err && err.code === 'rate_limited' ? '少し時間をおいてからもう一度お試しください。' : 'アドバイスを作れませんでした。もう一度お試しください。';
+  } finally { btn.disabled = false; btn.textContent = 'もう一度相談する'; }
+};
+
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (view.tab === 'save') renderPool(); }, 150); });
+let lastKey = curKey(), lastDay = now().getDate();
+setInterval(() => { const k = curKey(), d = now().getDate(); if (k !== lastKey || d !== lastDay){ lastKey = k; lastDay = d; renderData(); } }, 60000);
+
+init();
+})();
+</script>
+
+</body>
+</html>
